@@ -4,16 +4,22 @@ function bukaKamera() {
 
 function paparGambar(event) {
     const file = event.target.files[0];
-
     if (!file) return;
+
+    const gambar = document.getElementById("previewPola");
+    const canvas = document.getElementById("canvasPola");
+    const status = document.getElementById("statusKamera");
 
     const reader = new FileReader();
 
     reader.onload = function(e) {
-        document.getElementById("previewPola").src = e.target.result;
-        document.getElementById("previewPola").style.display = "block";
-        document.getElementById("statusKamera").innerHTML =
-            "🟢 Gambar pola berjaya dimuat naik.";
+        gambar.src = e.target.result;
+        gambar.style.display = "block";
+
+        // Sembunyikan hasil lama
+        canvas.style.display = "none";
+
+        status.innerHTML = "🟢 Gambar pola berjaya dimuat naik.";
     };
 
     reader.readAsDataURL(file);
