@@ -3,8 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <title>SMART-POLA</title>
-<link rel="stylesheet" href="style.css">
+
+    <link rel="stylesheet" href="style.css">
+</head>
 
 <body>
 
@@ -13,51 +16,35 @@
 
     <hr>
 
-    <h2>INPUT</h2>
+    <h2>1. INPUT UKURAN BADAN</h2>
 
-    <label>Ukuran Pinggang (cm)</label><br>
+    <label>Pinggang (cm)</label>
     <input type="number" id="pinggang" placeholder="Contoh: 76">
 
-    <br><br>
-
-    <label>Ukuran Punggung (cm)</label><br>
+    <label>Punggung (cm)</label>
     <input type="number" id="punggung" placeholder="Contoh: 100">
 
-    <br><br>
+    <label>Panjang Pola (cm)</label>
+    <input type="number" id="panjang" placeholder="Contoh: 40">
 
-    <button onclick="semakUkuran()">SEMAK UKURAN</button>
+    <br>
+
+    <button onclick="semakUkuran()">SEMAK POLA</button>
 
     <hr>
 
-    <h2>PROCESS</h2>
-    <p id="formula">Formula akan dipaparkan di sini.</p>
+    <h2>2. FORMULA POLA</h2>
 
-    <h2>OUTPUT</h2>
-    <div id="result">Sila masukkan ukuran.</div>
+    <div id="formula">
+        Formula akan dipaparkan selepas ukuran dimasukkan.
+    </div>
 
-    <script src="script.js"></script>
-        function semakUkuran() {
-            const pinggang = Number(document.getElementById("pinggang").value);
-            const punggung = Number(document.getElementById("punggung").value);
+    <h2>3. KEPUTUSAN</h2>
 
-            if (!pinggang || !punggung) {
-                document.getElementById("result").innerHTML =
-                    "⚠️ Sila masukkan semua ukuran.";
-                return;
-            }
+    <div id="result">
+        Sila masukkan ukuran badan.
+    </div>
 
-            const sukuPinggang = pinggang / 4;
-            const sukuPunggung = punggung / 4;
-
-            document.getElementById("formula").innerHTML =
-                "¼ Pinggang = " + sukuPinggang.toFixed(1) +
-                " cm<br>¼ Punggung = " + sukuPunggung.toFixed(1) + " cm";
-
-            document.getElementById("result").innerHTML =
-                "🟢 UKURAN BERJAYA DIKIRA<br><br>" +
-                "¼ Pinggang: " + sukuPinggang.toFixed(1) + " cm<br>" +
-                "¼ Punggung: " + sukuPunggung.toFixed(1) + " cm";
-        }
     <script src="script.js"></script>
 
 </body>
