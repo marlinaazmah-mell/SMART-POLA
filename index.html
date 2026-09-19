@@ -13,16 +13,25 @@
 <body>
 
     <header class="header">
+
         <div>
+
             <h1>SMART-POLA</h1>
-            <p>AI-Powered Garment Pattern Checking System</p>
+
+            <p>
+                AI-Powered Garment Pattern Checking System
+            </p>
+
         </div>
+
     </header>
 
 
     <main class="container">
 
-        <!-- DATA UKURAN BADAN -->
+
+        <!-- 1. DATA UKURAN BADAN -->
+
         <section class="card">
 
             <h2>1. Data Ukuran Badan</h2>
@@ -31,7 +40,9 @@
                 Masukkan ukuran sebenar badan sebelum proses semakan pola.
             </p>
 
-            <!-- PILIH UNIT -->
+
+            <!-- UNIT -->
+
             <div class="measurement-unit">
 
                 <label for="unit">
@@ -39,16 +50,25 @@
                 </label>
 
                 <select id="unit">
-                    <option value="cm">Sentimeter (cm)</option>
-                    <option value="inch">Inci (in)</option>
+
+                    <option value="cm">
+                        Sentimeter (cm)
+                    </option>
+
+                    <option value="inch">
+                        Inci (in)
+                    </option>
+
                 </select>
 
             </div>
 
 
+            <!-- UKURAN -->
+
             <div class="measurement-grid">
 
-                <!-- LEBAR BAHU -->
+
                 <div class="measurement">
 
                     <label for="shoulder">
@@ -65,14 +85,15 @@
                             placeholder="Contoh: 38"
                         >
 
-                        <span class="unit-label">cm</span>
+                        <span class="unit-label">
+                            cm
+                        </span>
 
                     </div>
 
                 </div>
 
 
-                <!-- DADA -->
                 <div class="measurement">
 
                     <label for="chest">
@@ -89,14 +110,15 @@
                             placeholder="Contoh: 92"
                         >
 
-                        <span class="unit-label">cm</span>
+                        <span class="unit-label">
+                            cm
+                        </span>
 
                     </div>
 
                 </div>
 
 
-                <!-- PINGGANG -->
                 <div class="measurement">
 
                     <label for="waist">
@@ -113,14 +135,15 @@
                             placeholder="Contoh: 76"
                         >
 
-                        <span class="unit-label">cm</span>
+                        <span class="unit-label">
+                            cm
+                        </span>
 
                     </div>
 
                 </div>
 
 
-                <!-- PINGGUL -->
                 <div class="measurement">
 
                     <label for="hip">
@@ -137,14 +160,15 @@
                             placeholder="Contoh: 98"
                         >
 
-                        <span class="unit-label">cm</span>
+                        <span class="unit-label">
+                            cm
+                        </span>
 
                     </div>
 
                 </div>
 
 
-                <!-- LEHER -->
                 <div class="measurement">
 
                     <label for="neck">
@@ -161,14 +185,15 @@
                             placeholder="Contoh: 36"
                         >
 
-                        <span class="unit-label">cm</span>
+                        <span class="unit-label">
+                            cm
+                        </span>
 
                     </div>
 
                 </div>
 
 
-                <!-- LABUH TENGAH BELAKANG -->
                 <div class="measurement">
 
                     <label for="backLength">
@@ -185,7 +210,9 @@
                             placeholder="Contoh: 40"
                         >
 
-                        <span class="unit-label">cm</span>
+                        <span class="unit-label">
+                            cm
+                        </span>
 
                     </div>
 
@@ -211,7 +238,9 @@
         </section>
 
 
-        <!-- IMBAS POLA -->
+
+        <!-- 2. IMBAS POLA -->
+
         <section class="card">
 
             <h2>2. Imbas Pola</h2>
@@ -230,9 +259,14 @@
                     muted
                 ></video>
 
+
+                <!--
+                    Canvas untuk memaparkan
+                    garisan yang dikesan
+                -->
+
                 <canvas
-                    id="canvas"
-                    class="hidden-canvas"
+                    id="overlayCanvas"
                 ></canvas>
 
             </div>
@@ -274,16 +308,22 @@
         </section>
 
 
-        <!-- ANALISIS -->
+
+        <!-- 3. ANALISIS POLA -->
+
         <section class="card">
 
             <h2>3. Analisis Pola</h2>
 
+
             <div class="analysis-grid">
+
 
                 <div class="analysis-item">
 
-                    <span>Garisan pola</span>
+                    <span>
+                        Garisan pola
+                    </span>
 
                     <strong id="lineStatus">
                         Belum dianalisis
@@ -294,7 +334,9 @@
 
                 <div class="analysis-item">
 
-                    <span>Ukuran pola</span>
+                    <span>
+                        Ukuran pola
+                    </span>
 
                     <strong id="patternMeasurement">
                         Menunggu imbasan
@@ -305,7 +347,9 @@
 
                 <div class="analysis-item">
 
-                    <span>Semakan formula</span>
+                    <span>
+                        Semakan formula
+                    </span>
 
                     <strong id="formulaStatus">
                         Belum tersedia
@@ -318,44 +362,56 @@
         </section>
 
 
-        <!-- KEPUTUSAN -->
+
+        <!-- 4. KEPUTUSAN -->
+
         <section class="card">
 
             <h2>4. Keputusan</h2>
+
 
             <div
                 id="resultBox"
                 class="result-box"
             >
+
                 <span>
                     Keputusan akan dipaparkan selepas analisis.
                 </span>
+
             </div>
 
         </section>
 
 
-        <!-- PASSPORT -->
+
+        <!-- 5. SMART-POLA PASSPORT -->
+
         <section class="card">
 
-            <h2>5. SMART-POLA Passport</h2>
+            <h2>
+                5. SMART-POLA Passport
+            </h2>
+
 
             <p class="description">
                 Rekod digital pencapaian dan semakan pola pelatih.
             </p>
 
+
             <div class="passport-placeholder">
 
                 <p>
-                    Rekod akan tersedia selepas sistem semakan pola
-                    dibangunkan.
+                    Rekod akan tersedia selepas sistem semakan pola dibangunkan.
                 </p>
 
             </div>
 
         </section>
 
+
     </main>
+
 
 
     <footer>
@@ -365,6 +421,7 @@
         </p>
 
     </footer>
+
 
 
     <script src="app.js"></script>
