@@ -33,6 +33,144 @@ const patternMeasurement =
 
 const formulaStatus =
     document.getElementById("formulaStatus");
+/*
+    Tetapan jenis pola
+*/
+
+const garmentType =
+    document.getElementById("garmentType");
+
+const patternPart =
+    document.getElementById("patternPart");
+
+const patternSelectionStatus =
+    document.getElementById(
+        "patternSelectionStatus"
+    );
+
+
+/*
+    Senarai bahagian pola
+*/
+
+const patternOptions = {
+
+    baju: [
+        "Badan Hadapan",
+        "Badan Belakang",
+        "Lengan",
+        "Kolar",
+        "Manset"
+    ],
+
+    kain: [
+        "Pola Kain",
+        "Pinggang"
+    ],
+
+    seluar: [
+        "Badan Seluar Hadapan",
+        "Badan Seluar Belakang",
+        "Pinggang",
+        "Poket"
+    ],
+
+    lain: [
+        "Bahagian Lain"
+    ]
+
+};
+
+
+/*
+    Tukar pilihan bahagian
+    berdasarkan jenis pakaian
+*/
+
+garmentType.addEventListener(
+    "change",
+    () => {
+
+        const selectedType =
+            garmentType.value;
+
+
+        patternPart.innerHTML =
+            `
+            <option value="">
+                -- Pilih bahagian pola --
+            </option>
+            `;
+
+
+        if (
+            !patternOptions[selectedType]
+        ) {
+
+            patternSelectionStatus.textContent =
+                "";
+
+            return;
+
+        }
+
+
+        patternOptions[selectedType]
+            .forEach(
+                (part) => {
+
+                    const option =
+                        document.createElement(
+                            "option"
+                        );
+
+
+                    option.value =
+                        part;
+
+
+                    option.textContent =
+                        part;
+
+
+                    patternPart.appendChild(
+                        option
+                    );
+
+                }
+            );
+
+
+        patternSelectionStatus.textContent =
+            "Jenis pakaian dipilih. Sila pilih bahagian pola.";
+
+    }
+);
+
+
+/*
+    Simpan pilihan bahagian pola
+*/
+
+patternPart.addEventListener(
+    "change",
+    () => {
+
+        if (
+            garmentType.value &&
+            patternPart.value
+        ) {
+
+            patternSelectionStatus.textContent =
+                `Pola dipilih: ${garmentType.options[garmentType.selectedIndex].text} — ${patternPart.value}`;
+
+            patternSelectionStatus.style.color =
+                "#166534";
+
+        }
+
+    }
+);
 
 
 let stream = null;
