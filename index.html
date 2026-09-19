@@ -2,7 +2,6 @@
 <html lang="ms">
 
 <head>
-
     <meta charset="UTF-8">
 
     <meta
@@ -16,12 +15,10 @@
         rel="stylesheet"
         href="style.css"
     >
-
 </head>
 
 
 <body>
-
 
 <header class="header">
 
@@ -34,13 +31,12 @@
 </header>
 
 
-
 <main class="container">
 
 
-    <!-- ============================= -->
+    <!-- ========================= -->
     <!-- 1. DATA UKURAN BADAN -->
-    <!-- ============================= -->
+    <!-- ========================= -->
 
     <section class="card">
 
@@ -53,8 +49,6 @@
 
         <div class="measurement-grid">
 
-
-            <!-- Lebar Bahu -->
 
             <div class="measurement">
 
@@ -80,9 +74,6 @@
             </div>
 
 
-
-            <!-- Keliling Dada -->
-
             <div class="measurement">
 
                 <label for="chest">
@@ -106,9 +97,6 @@
 
             </div>
 
-
-
-            <!-- Keliling Pinggang -->
 
             <div class="measurement">
 
@@ -134,9 +122,6 @@
             </div>
 
 
-
-            <!-- Keliling Pinggul -->
-
             <div class="measurement">
 
                 <label for="hip">
@@ -161,9 +146,6 @@
             </div>
 
 
-
-            <!-- Keliling Leher -->
-
             <div class="measurement">
 
                 <label for="neck">
@@ -187,9 +169,6 @@
 
             </div>
 
-
-
-            <!-- Labuh Tengah Belakang -->
 
             <div class="measurement">
 
@@ -218,9 +197,6 @@
         </div>
 
 
-
-        <!-- Unit -->
-
         <div class="unit-selection">
 
             <label for="unit">
@@ -242,14 +218,12 @@
         </div>
 
 
-
         <button
             id="saveMeasurements"
             class="primary-button"
         >
             Simpan Ukuran
         </button>
-
 
 
         <p
@@ -262,10 +236,9 @@
 
 
 
-
-    <!-- ============================= -->
+    <!-- ========================= -->
     <!-- 2. TETAPAN POLA -->
-    <!-- ============================= -->
+    <!-- ========================= -->
 
     <section class="card">
 
@@ -276,11 +249,8 @@
         </p>
 
 
-
         <div class="pattern-selection">
 
-
-            <!-- JENIS PAKAIAN -->
 
             <div class="pattern-field">
 
@@ -288,10 +258,7 @@
                     Jenis Pakaian
                 </label>
 
-                <select
-                    id="garmentType"
-                    size="1"
-                >
+                <select id="garmentType">
 
                     <option value="">
                         -- Pilih jenis pakaian --
@@ -318,19 +285,13 @@
             </div>
 
 
-
-            <!-- BAHAGIAN POLA -->
-
             <div class="pattern-field">
 
                 <label for="patternPart">
                     Bahagian Pola
                 </label>
 
-                <select
-                    id="patternPart"
-                    size="1"
-                >
+                <select id="patternPart">
 
                     <option value="">
                         -- Pilih bahagian pola --
@@ -344,7 +305,6 @@
         </div>
 
 
-
         <p
             id="patternSelectionStatus"
             class="status"
@@ -355,19 +315,17 @@
 
 
 
-
-    <!-- ============================= -->
+    <!-- ========================= -->
     <!-- 3. IMBAS POLA -->
-    <!-- ============================= -->
+    <!-- ========================= -->
 
     <section class="card">
 
         <h2>3. Imbas Pola</h2>
 
         <p class="description">
-            Gunakan kamera untuk mengimbas pola pakaian.
+            Buka kamera dan letakkan pola dalam paparan kamera.
         </p>
-
 
 
         <div class="camera-container">
@@ -381,11 +339,9 @@
 
             <canvas
                 id="overlayCanvas"
-                class="overlay-canvas"
             ></canvas>
 
         </div>
-
 
 
         <div class="camera-controls">
@@ -409,7 +365,6 @@
         </div>
 
 
-
         <div class="status-box">
 
             <strong>Status:</strong>
@@ -425,15 +380,13 @@
 
 
 
-
-    <!-- ============================= -->
+    <!-- ========================= -->
     <!-- 4. ANALISIS POLA -->
-    <!-- ============================= -->
+    <!-- ========================= -->
 
     <section class="card">
 
         <h2>4. Analisis Pola</h2>
-
 
 
         <div class="analysis-grid">
@@ -452,7 +405,6 @@
             </div>
 
 
-
             <div class="analysis-item">
 
                 <span>
@@ -464,7 +416,6 @@
                 </strong>
 
             </div>
-
 
 
             <div class="analysis-item">
@@ -487,15 +438,13 @@
 
 
 
-
-    <!-- ============================= -->
+    <!-- ========================= -->
     <!-- 5. KEPUTUSAN -->
-    <!-- ============================= -->
+    <!-- ========================= -->
 
     <section class="card">
 
         <h2>5. Keputusan Semakan</h2>
-
 
 
         <div class="result-box">
@@ -516,15 +465,13 @@
 
 
 
-
-    <!-- ============================= -->
+    <!-- ========================= -->
     <!-- 6. SMART-POLA PASSPORT -->
-    <!-- ============================= -->
+    <!-- ========================= -->
 
     <section class="card">
 
         <h2>6. SMART-POLA Passport</h2>
-
 
 
         <div class="passport-placeholder">
@@ -541,8 +488,6 @@
 </main>
 
 
-
-
 <footer>
 
     SMART-POLA © 2026
@@ -550,9 +495,7 @@
 </footer>
 
 
-
 <script src="app.js"></script>
-
 
 </body>
 
