@@ -1,6 +1,7 @@
-function kesanGarisan() {
+ffunction kesanGarisan() {
 
     const gambar = document.getElementById("previewPola");
+    const canvas = document.getElementById("canvasPola");
     const status = document.getElementById("statusKamera");
 
     if (!gambar.src) {
@@ -13,45 +14,31 @@ function kesanGarisan() {
         return;
     }
 
-    status.innerHTML = "🔎 Sedang mengesan garisan pola...";
+    canvas.width = gambar.naturalWidth;
+    canvas.height = gambar.naturalHeight;
 
-    gambar.onload = function () {
+    const ctx = canvas.getContext("2d");
 
-        const canvas = document.createElement("canvas");
-        const ctx = canvas.getContext("2d");
+    ctx.drawImage(gambar, 0, 0);
 
-        canvas.width = gambar.naturalWidth;
-        canvas.height = gambar.naturalHeight;
+    let src = cv.imread(canvas);
+    let gray = new cv.Mat();
+    let edges = new cv.Mat();
 
-        ctx.drawImage(gambar, 0, 0);
+    cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
 
-        let src = cv.imread(canvas);
-        let gray = new cv.Mat();
-        let edges = new cv.Mat();
+    cv.Canny(gray, edges, 50, 150);
 
-        // Tukar gambar kepada grayscale
-        cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
+    cv.imshow(canvas, edges);
 
-        // Kesan garisan/tepi objek
-        cv.Canny(gray, edges, 50, 150);
+    canvas.style.display = "block";
 
-        // Paparkan hasil
-        cv.imshow(canvas, edges);
+    src.delete();
+    gray.delete();
+    edges.delete();
 
-        gambar.src = canvas.toDataURL();
-
-        src.delete();
-        gray.delete();
-        edges.delete();
-
-        status.innerHTML = `
-            🟢 <strong>GARISAN POLA DIKESAN</strong><br><br>
-            Sistem telah memproses imej pola.
-        `;
-    };
-
-    // Paksa proses semula jika gambar sudah dimuatkan
-    if (gambar.complete) {
-        gambar.onload();
-    }
+    status.innerHTML = `
+        🟢 <strong>GARISAN DIKESAN</strong><br><br>
+        Imej telah diproses oleh OpenCV.
+    `;
 }
