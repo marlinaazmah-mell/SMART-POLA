@@ -1,1 +1,64 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMART-POLA</title>
+</head>
 
+<body>
+
+    <h1>SMART-POLA</h1>
+    <p>AI Pattern Measurement Assistant</p>
+
+    <hr>
+
+    <h2>INPUT</h2>
+
+    <label>Ukuran Pinggang (cm)</label><br>
+    <input type="number" id="pinggang" placeholder="Contoh: 76">
+
+    <br><br>
+
+    <label>Ukuran Punggung (cm)</label><br>
+    <input type="number" id="punggung" placeholder="Contoh: 100">
+
+    <br><br>
+
+    <button onclick="semakUkuran()">SEMAK UKURAN</button>
+
+    <hr>
+
+    <h2>PROCESS</h2>
+    <p id="formula">Formula akan dipaparkan di sini.</p>
+
+    <h2>OUTPUT</h2>
+    <div id="result">Sila masukkan ukuran.</div>
+
+    <script>
+        function semakUkuran() {
+            const pinggang = Number(document.getElementById("pinggang").value);
+            const punggung = Number(document.getElementById("punggung").value);
+
+            if (!pinggang || !punggung) {
+                document.getElementById("result").innerHTML =
+                    "⚠️ Sila masukkan semua ukuran.";
+                return;
+            }
+
+            const sukuPinggang = pinggang / 4;
+            const sukuPunggung = punggung / 4;
+
+            document.getElementById("formula").innerHTML =
+                "¼ Pinggang = " + sukuPinggang.toFixed(1) +
+                " cm<br>¼ Punggung = " + sukuPunggung.toFixed(1) + " cm";
+
+            document.getElementById("result").innerHTML =
+                "🟢 UKURAN BERJAYA DIKIRA<br><br>" +
+                "¼ Pinggang: " + sukuPinggang.toFixed(1) + " cm<br>" +
+                "¼ Punggung: " + sukuPunggung.toFixed(1) + " cm";
+        }
+    </script>
+
+</body>
+</html>
