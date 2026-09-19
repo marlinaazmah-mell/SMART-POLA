@@ -8,14 +8,13 @@ function kesanGarisan() {
         return;
     }
 
-    status.innerHTML = "🔎 Sedang menganalisis pola...";
+    if (typeof cv === "undefined") {
+        status.innerHTML = "🔴 OpenCV belum dimuatkan.";
+        return;
+    }
 
-    setTimeout(function() {
-
-        status.innerHTML = `
-            🟢 <strong>POLA BERJAYA DIKESAN</strong><br><br>
-            Sistem dapat membaca imej pola.
-        `;
-
-    }, 1000);
+    status.innerHTML = `
+        🟢 <strong>OpenCV BERJAYA DIHUBUNGKAN</strong><br><br>
+        Sistem sedia untuk membaca garisan pola.
+    `;
 }
