@@ -454,6 +454,215 @@ function detectPatternLines() {
         );
 
 
+    const overlayContext =
+        overlayCanvas.getContext("2d");
+
+
+    canvas.width =
+        video.videoWidth;
+
+    canvas.height =
+        video.videoHeight;
+
+
+    overlayCanvas.width =
+        video.videoWidth;
+
+    overlayCanvas.height =
+        video.videoHeight;
+
+
+    /*
+        Ambil imej daripada kamera
+    */
+
+    context.drawImage(
+        video,
+        0,
+        0,
+        canvas.width,
+        canvas.height
+    );
+
+
+    const image =
+        context.getImageData(
+            0,
+            0,
+            canvas.width,
+            canvas.height
+        );
+
+
+    const data =
+        image.data;
+
+
+    /*
+        Kosongkan overlay sebelumnya
+    */
+
+    overlayContext.clearRect(
+        0,
+        0,
+        overlayCanvas.width,
+        overlayCanvas.height
+    );
+
+
+    /*
+        Warna garisan yang dikesan
+    */
+
+    overlayContext.fillStyle =
+        "rgba(0, 255, 0, 0.9)";
+
+
+    let edgePixels = 0;
+
+
+    /*
+        Kesan perubahan brightness
+    */
+
+    for (
+        let y = 1;
+        y < canvas.height - 1;
+        y += 3
+    ) {
+
+        for (
+            let x = 1;
+            x < canvas.width - 1;
+            x += 3
+        ) {
+
+            const currentIndex =
+                (y * canvas.width + x) * 4;
+
+
+            const rightIndex =
+                (y * canvas.width + (x + 1)) * 4;
+
+
+            const currentBrightness =
+                (
+                    data[currentIndex] +
+                    data[currentIndex + 1] +
+                    data[currentIndex + 2]
+                ) / 3;
+
+
+            const rightBrightness =
+                (
+                    data[rightIndex] +
+                    data[rightIndex + 1] +
+                    data[rightIndex + 2]
+                ) / 3;
+
+
+            const difference =
+                Math.abs(
+                    currentBrightness -
+                    rightBrightness
+                );
+
+
+            if (
+                difference > 55
+            ) {
+
+                edgePixels++;
+
+
+                /*
+                    Lukis titik pada garisan
+                */
+
+                overlayContext.fillRect(
+                    x,
+                    y,
+                    3,
+                    3
+                );
+
+            }
+
+        }
+
+    }
+
+
+    /*
+        Tentukan tahap pengesanan
+    */
+
+    const detectionLevel =
+        edgePixels /
+        (
+            (canvas.width *
+            canvas.height) / 9
+        );
+
+
+    if (
+        detectionLevel > 0.01
+    ) {
+
+        statusText.textContent =
+            "Garisan pola dikesan.";
+
+        lineStatus.textContent =
+            "Dikesan";
+
+
+        patternMeasurement.textContent =
+            "Menunggu ukuran";
+
+
+    }
+
+    else {
+
+        statusText.textContent =
+            "Mengesan garisan pola...";
+
+        lineStatus.textContent =
+            "Mengesan...";
+
+    }
+
+
+    animationFrame =
+        requestAnimationFrame(
+            detectPatternLines
+        );
+
+}
+
+    if (
+        !stream ||
+        video.readyState < 2
+    ) {
+
+        animationFrame =
+            requestAnimationFrame(
+                detectPatternLines
+            );
+
+        return;
+    }
+
+
+    const context =
+        canvas.getContext(
+            "2d",
+            {
+                willReadFrequently: true
+            }
+        );
+
+
     canvas.width =
         video.videoWidth;
 
