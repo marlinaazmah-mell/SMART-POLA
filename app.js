@@ -1,389 +1,505 @@
-/* =========================================
-   SMART-POLA v0.2
-   ========================================= */
+document.addEventListener("DOMContentLoaded", () => {
 
-/* ---------- ELEMENT ---------- */
+    // =========================================================
+    // 1. AMBIL ELEMEN HTML
+    // =========================================================
 
-const garmentType = document.getElementById("garmentType");
-const patternPart = document.getElementById("patternPart");
-const patternSelectionStatus = document.getElementById("patternSelectionStatus");
+    const garmentType = document.getElementById("garmentType");
+    const patternPart = document.getElementById("patternPart");
+    const patternSelectionStatus = document.getElementById("patternSelectionStatus");
 
-const unitSelect = document.getElementById("unit");
-const unitLabels = document.querySelectorAll(".unit-label");
+    const unitSelect = document.getElementById("unit");
 
-const shoulder = document.getElementById("shoulder");
-const chest = document.getElementById("chest");
-const waist = document.getElementById("waist");
-const hip = document.getElementById("hip");
-const neck = document.getElementById("neck");
-const backLength = document.getElementById("backLength");
+    const startCameraBtn = document.getElementById("startCameraBtn");
+    const stopCameraBtn = document.getElementById("stopCameraBtn");
 
-const saveMeasurements = document.getElementById("saveMeasurements");
-const measurementStatus = document.getElementById("measurementStatus");
+    const camera = document.getElementById("camera");
+    const overlayCanvas = document.getElementById("overlayCanvas");
 
-const video = document.getElementById("camera");
-const overlayCanvas = document.getElementById("overlayCanvas");
+    const cameraStatus = document.getElementById("cameraStatus");
+    const detectionStatus = document.getElementById("detectionStatus");
 
-const startCamera = document.getElementById("startCamera");
-const stopCameraBtn = document.getElementById("stopCamera");
+    const analyzeBtn = document.getElementById("analyzeBtn");
 
-const status = document.getElementById("status");
-const lineStatus = document.getElementById("lineStatus");
-const patternMeasurement = document.getElementById("patternMeasurement");
-const formulaStatus = document.getElementById("formulaStatus");
+    const resultTitle = document.getElementById("resultTitle");
+    const resultMessage = document.getElementById("resultMessage");
 
-const resultTitle = document.getElementById("resultTitle");
-const resultMessage = document.getElementById("resultMessage");
+    const measuredValue = document.getElementById("measuredValue");
+    const expectedValue = document.getElementById("expectedValue");
+    const differenceValue = document.getElementById("differenceValue");
 
-/* ---------- DATA ---------- */
 
-let stream = null;
-let animationFrame = null;
+    // =========================================================
+    // 2. SENARAI BAHAGIAN POLA
+    // =========================================================
 
-const patternOptions = {
-  baju: [
-    "Badan Hadapan",
-    "Badan Belakang",
-    "Lengan",
-    "Kolar",
-    "Manset"
-  ],
-  kain: [
-    "Pola Kain",
-    "Pinggang"
-  ],
-  seluar: [
-    "Badan Seluar Hadapan",
-    "Badan Seluar Belakang",
-    "Pinggang",
-    "Poket"
-  ],
-  lain: [
-    "Bahagian Lain"
-  ]
-};
+    const patternOptions = {
 
-/* =========================================
-   DROPDOWN
-   ========================================= */
+        baju: [
+            "Badan Hadapan",
+            "Badan Belakang",
+            "Lengan",
+            "Kolar",
+            "Manset"
+        ],
 
-function updatePatternParts() {
+        kain: [
+            "Pola Kain",
+            "Pinggang"
+        ],
 
-  const selected = garmentType.value;
+        seluar: [
+            "Badan Seluar Hadapan",
+            "Badan Seluar Belakang",
+            "Pinggang",
+            "Poket"
+        ],
 
-  patternPart.innerHTML = "";
+        lain: [
+            "Bahagian Lain"
+        ]
 
-  const first = document.createElement("option");
-  first.value = "";
-  first.textContent = "-- Pilih bahagian pola --";
-  patternPart.appendChild(first);
+    };
 
-  if (!selected) {
-    patternSelectionStatus.textContent = "";
-    return;
-  }
 
-  patternOptions[selected].forEach(part => {
+    // =========================================================
+    // 3. DROPDOWN BAHAGIAN POLA
+    // =========================================================
 
-    const option = document.createElement("option");
+    function updatePatternParts() {
 
-    option.value = part;
-    option.textContent = part;
+        const selectedGarment = garmentType.value;
 
-    patternPart.appendChild(option);
+        // Kosongkan pilihan lama
+        patternPart.innerHTML = "";
 
-  });
+        // Pilihan pertama
+        const defaultOption = document.createElement("option");
 
-  patternSelectionStatus.textContent =
-    "Sila pilih bahagian pola.";
+        defaultOption.value = "";
+        defaultOption.textContent = "-- Pilih bahagian pola --";
 
-}
+        patternPart.appendChild(defaultOption);
 
-garmentType.addEventListener("change", updatePatternParts);
 
-patternPart.addEventListener("change", () => {
+        // Jika belum pilih jenis pakaian
+        if (!selectedGarment) {
 
-  if (!patternPart.value) return;
+            patternSelectionStatus.textContent =
+                "Sila pilih jenis pakaian dahulu.";
 
-  const garmentName =
-    garmentType.options[garmentType.selectedIndex].text;
+            return;
+        }
 
-  patternSelectionStatus.textContent =
-    `Pola dipilih: ${garmentName} — ${patternPart.value}`;
 
-  patternSelectionStatus.style.color = "#166534";
+        // Dapatkan senarai bahagian pola
+        const parts = patternOptions[selectedGarment] || [];
 
-});
 
-/* =========================================
-   UNIT
-   ========================================= */
+        // Masukkan setiap bahagian ke dropdown
+        parts.forEach((part) => {
 
-unitSelect.addEventListener("change", () => {
+            const option = document.createElement("option");
 
-  const label =
-    unitSelect.value === "cm"
-      ? "cm"
-      : "in";
+            option.value = part;
+            option.textContent = part;
 
-  unitLabels.forEach(el => el.textContent = label);
+            patternPart.appendChild(option);
 
-});
+        });
 
-/* =========================================
-   SIMPAN UKURAN
-   ========================================= */
 
-saveMeasurements.addEventListener("click", () => {
-
-  const values = [
-    shoulder.value,
-    chest.value,
-    waist.value,
-    hip.value,
-    neck.value,
-    backLength.value
-  ];
-
-  const invalid =
-    values.some(v => !v || Number(v) <= 0);
-
-  if (invalid) {
-
-    measurementStatus.textContent =
-      "Lengkapkan semua 6 ukuran dahulu.";
-
-    measurementStatus.style.color = "#b91c1c";
-
-    return;
-  }
-
-  const data = {
-    unit: unitSelect.value,
-    shoulder: shoulder.value,
-    chest: chest.value,
-    waist: waist.value,
-    hip: hip.value,
-    neck: neck.value,
-    backLength: backLength.value
-  };
-
-  localStorage.setItem(
-    "smartPolaMeasurements",
-    JSON.stringify(data)
-  );
-
-  measurementStatus.textContent =
-    "Ukuran berjaya disimpan.";
-
-  measurementStatus.style.color = "#166534";
-
-});
-
-/* =========================================
-   LOAD UKURAN
-   ========================================= */
-
-(function loadMeasurements() {
-
-  const saved =
-    localStorage.getItem("smartPolaMeasurements");
-
-  if (!saved) return;
-
-  const data = JSON.parse(saved);
-
-  unitSelect.value = data.unit || "cm";
-
-  shoulder.value = data.shoulder || "";
-  chest.value = data.chest || "";
-  waist.value = data.waist || "";
-  hip.value = data.hip || "";
-  neck.value = data.neck || "";
-  backLength.value = data.backLength || "";
-
-  const label =
-    unitSelect.value === "cm"
-      ? "cm"
-      : "in";
-
-  unitLabels.forEach(el => el.textContent = label);
-
-})();
-
-/* =========================================
-   KAMERA
-   ========================================= */
-
-startCamera.addEventListener("click", async () => {
-
-  if (!garmentType.value || !patternPart.value) {
-
-    status.textContent =
-      "Pilih jenis pakaian dan bahagian pola dahulu.";
-
-    return;
-  }
-
-  try {
-
-    stream =
-      await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode: "environment",
-          width: { ideal: 1280 },
-          height: { ideal: 720 }
-        },
-        audio: false
-      });
-
-    video.srcObject = stream;
-
-    await video.play();
-
-    startCamera.disabled = true;
-    stopCameraBtn.disabled = false;
-
-    status.textContent =
-      "Kamera aktif.";
-
-    detectPatternLines();
-
-  }
-
-  catch (err) {
-
-    status.textContent =
-      "Gagal membuka kamera.";
-
-    console.error(err);
-
-  }
-
-});
-
-stopCameraBtn.addEventListener("click", stopCamera);
-
-function stopCamera() {
-
-  if (stream) {
-
-    stream.getTracks().forEach(t => t.stop());
-
-    stream = null;
-
-  }
-
-  if (animationFrame) {
-
-    cancelAnimationFrame(animationFrame);
-
-    animationFrame = null;
-
-  }
-
-  video.srcObject = null;
-
-  startCamera.disabled = false;
-  stopCameraBtn.disabled = true;
-
-  status.textContent =
-    "Kamera dihentikan.";
-
-}
-
-/* =========================================
-   KESAN GARISAN
-   ========================================= */
-
-function detectPatternLines() {
-
-  if (!stream || video.readyState < 2) {
-
-    animationFrame =
-      requestAnimationFrame(detectPatternLines);
-
-    return;
-
-  }
-
-  const canvas = document.createElement("canvas");
-
-  canvas.width = video.videoWidth;
-  canvas.height = video.videoHeight;
-
-  const ctx =
-    canvas.getContext("2d", {
-      willReadFrequently: true
-    });
-
-  const overlay =
-    overlayCanvas.getContext("2d");
-
-  overlayCanvas.width = canvas.width;
-  overlayCanvas.height = canvas.height;
-
-  ctx.drawImage(video, 0, 0);
-
-  const image =
-    ctx.getImageData(0, 0, canvas.width, canvas.height);
-
-  const data = image.data;
-
-  overlay.clearRect(0, 0, canvas.width, canvas.height);
-
-  overlay.fillStyle =
-    "rgba(0,255,0,0.8)";
-
-  let edges = 0;
-
-  for (let y = 1; y < canvas.height - 1; y += 3) {
-
-    for (let x = 1; x < canvas.width - 1; x += 3) {
-
-      const i =
-        (y * canvas.width + x) * 4;
-
-      const r =
-        (y * canvas.width + x + 1) * 4;
-
-      const b1 =
-        (data[i] + data[i+1] + data[i+2]) / 3;
-
-      const b2 =
-        (data[r] + data[r+1] + data[r+2]) / 3;
-
-      if (Math.abs(b1 - b2) > 55) {
-
-        overlay.fillRect(x, y, 3, 3);
-
-        edges++;
-
-      }
+        patternSelectionStatus.textContent =
+            "Sila pilih bahagian pola.";
 
     }
 
-  }
 
-  if (edges > 500) {
+    // Bila Jenis Pakaian berubah
+    if (garmentType) {
 
-    lineStatus.textContent = "Dikesan";
+        garmentType.addEventListener("change", updatePatternParts);
 
-    patternMeasurement.textContent =
-      "Menunggu formula";
+    }
 
-    formulaStatus.textContent =
-      "Belum dikira";
 
-    resultTitle.textContent =
-      "Garisan pola dikesan";
+    // Bila Bahagian Pola dipilih
+    if (patternPart) {
 
-    resultMessage.textContent =
-      "Semakan formula akan ditambah pada versi seterusnya.";
+        patternPart.addEventListener("change", () => {
 
-  }
+            if (patternPart.value) {
 
-  animationFrame =
-    requestAnimationFrame(detectPatternLines);
+                patternSelectionStatus.textContent =
+                    "Bahagian pola dipilih: " + patternPart.value;
 
-}
+            } else {
+
+                patternSelectionStatus.textContent =
+                    "Sila pilih bahagian pola.";
+
+            }
+
+        });
+
+    }
+
+
+    // =========================================================
+    // 4. UNIT UKURAN
+    // =========================================================
+
+    if (unitSelect) {
+
+        unitSelect.addEventListener("change", () => {
+
+            const selectedUnit = unitSelect.value;
+
+            const unitLabels = document.querySelectorAll(".unit-label");
+
+            unitLabels.forEach((label) => {
+
+                label.textContent = selectedUnit;
+
+            });
+
+        });
+
+    }
+
+
+    // =========================================================
+    // 5. KAMERA
+    // =========================================================
+
+    let cameraStream = null;
+    let detectionAnimation = null;
+
+
+    async function startCamera() {
+
+        try {
+
+            cameraStream = await navigator.mediaDevices.getUserMedia({
+
+                video: {
+                    facingMode: "environment"
+                },
+
+                audio: false
+
+            });
+
+
+            camera.srcObject = cameraStream;
+
+            await camera.play();
+
+
+            cameraStatus.textContent =
+                "Kamera sedang aktif.";
+
+            startCameraBtn.disabled = true;
+            stopCameraBtn.disabled = false;
+
+
+            startDetection();
+
+
+        } catch (error) {
+
+            console.error(error);
+
+            cameraStatus.textContent =
+                "Kamera tidak dapat dibuka. Sila benarkan akses kamera.";
+
+        }
+
+    }
+
+
+    function stopCamera() {
+
+        if (cameraStream) {
+
+            cameraStream.getTracks().forEach((track) => {
+
+                track.stop();
+
+            });
+
+            cameraStream = null;
+
+        }
+
+
+        camera.srcObject = null;
+
+
+        if (detectionAnimation) {
+
+            cancelAnimationFrame(detectionAnimation);
+
+            detectionAnimation = null;
+
+        }
+
+
+        const ctx = overlayCanvas.getContext("2d");
+
+        ctx.clearRect(
+            0,
+            0,
+            overlayCanvas.width,
+            overlayCanvas.height
+        );
+
+
+        cameraStatus.textContent =
+            "Kamera dihentikan.";
+
+        detectionStatus.textContent =
+            "Pengesanan garisan tidak aktif.";
+
+        startCameraBtn.disabled = false;
+        stopCameraBtn.disabled = true;
+
+    }
+
+
+    if (startCameraBtn) {
+
+        startCameraBtn.addEventListener("click", startCamera);
+
+    }
+
+
+    if (stopCameraBtn) {
+
+        stopCameraBtn.addEventListener("click", stopCamera);
+
+    }
+
+
+    // =========================================================
+    // 6. PENGESANAN GARISAN ASAS
+    // =========================================================
+
+    function startDetection() {
+
+        if (!camera || !overlayCanvas) {
+            return;
+        }
+
+
+        const ctx = overlayCanvas.getContext("2d");
+
+
+        function detect() {
+
+            if (!cameraStream) {
+                return;
+            }
+
+
+            if (
+                camera.videoWidth === 0 ||
+                camera.videoHeight === 0
+            ) {
+
+                detectionAnimation =
+                    requestAnimationFrame(detect);
+
+                return;
+
+            }
+
+
+            // Samakan saiz canvas dengan video
+            overlayCanvas.width = camera.videoWidth;
+            overlayCanvas.height = camera.videoHeight;
+
+
+            ctx.clearRect(
+                0,
+                0,
+                overlayCanvas.width,
+                overlayCanvas.height
+            );
+
+
+            /*
+             * Buat masa ini kita bina kawasan panduan
+             * untuk pola.
+             *
+             * Sistem pengesanan garisan sebenar
+             * akan dimasukkan selepas modul formula
+             * dan pengukuran disediakan.
+             */
+
+
+            const marginX =
+                overlayCanvas.width * 0.08;
+
+            const marginY =
+                overlayCanvas.height * 0.08;
+
+
+            const width =
+                overlayCanvas.width - (marginX * 2);
+
+            const height =
+                overlayCanvas.height - (marginY * 2);
+
+
+            ctx.setLineDash([12, 8]);
+
+            ctx.lineWidth = 3;
+
+            ctx.strokeStyle = "rgba(255,255,255,0.9)";
+
+
+            ctx.strokeRect(
+                marginX,
+                marginY,
+                width,
+                height
+            );
+
+
+            ctx.setLineDash([]);
+
+
+            detectionStatus.textContent =
+                "Kamera aktif — halakan kamera pada pola.";
+
+
+            detectionAnimation =
+                requestAnimationFrame(detect);
+
+        }
+
+
+        detect();
+
+    }
+
+
+    // =========================================================
+    // 7. ANALISIS POLA
+    // =========================================================
+
+    if (analyzeBtn) {
+
+        analyzeBtn.addEventListener("click", () => {
+
+            const selectedGarment =
+                garmentType.value;
+
+            const selectedPattern =
+                patternPart.value;
+
+
+            // Semak jenis pakaian
+            if (!selectedGarment) {
+
+                resultTitle.textContent =
+                    "Maklumat belum lengkap";
+
+                resultMessage.textContent =
+                    "Sila pilih jenis pakaian.";
+
+                return;
+
+            }
+
+
+            // Semak bahagian pola
+            if (!selectedPattern) {
+
+                resultTitle.textContent =
+                    "Maklumat belum lengkap";
+
+                resultMessage.textContent =
+                    "Sila pilih bahagian pola.";
+
+                return;
+
+            }
+
+
+            // Buat masa ini belum gunakan formula sebenar.
+            // Formula GIATMARA akan dimasukkan kemudian.
+
+
+            resultTitle.textContent =
+                "Pola sedia untuk dianalisis";
+
+            resultMessage.textContent =
+                "SMART-POLA telah menerima pilihan pola. Formula pengiraan akan digunakan selepas dimasukkan ke dalam sistem.";
+
+
+            if (measuredValue) {
+
+                measuredValue.textContent =
+                    "--";
+
+            }
+
+
+            if (expectedValue) {
+
+                expectedValue.textContent =
+                    "--";
+
+            }
+
+
+            if (differenceValue) {
+
+                differenceValue.textContent =
+                    "--";
+
+            }
+
+        });
+
+    }
+
+
+    // =========================================================
+    // 8. STATUS AWAL
+    // =========================================================
+
+    if (patternSelectionStatus) {
+
+        patternSelectionStatus.textContent =
+            "Sila pilih jenis pakaian dahulu.";
+
+    }
+
+
+    if (cameraStatus) {
+
+        cameraStatus.textContent =
+            "Kamera belum diaktifkan.";
+
+    }
+
+
+    if (detectionStatus) {
+
+        detectionStatus.textContent =
+            "Pengesanan garisan tidak aktif.";
+
+    }
+
+
+    if (stopCameraBtn) {
+
+        stopCameraBtn.disabled = true;
+
+    }
+
+
+});
