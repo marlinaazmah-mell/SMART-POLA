@@ -1,5 +1,4 @@
 const video = document.getElementById("camera");
-const canvas = document.createElement("canvas");
 const overlayCanvas = document.getElementById("overlayCanvas");
 
 const startButton = document.getElementById("startCamera");
@@ -33,8 +32,11 @@ const patternMeasurement =
 
 const formulaStatus =
     document.getElementById("formulaStatus");
+
+
+
 /*
-    Tetapan jenis pola
+    TETAPAN POLA
 */
 
 const garmentType =
@@ -49,8 +51,39 @@ const patternSelectionStatus =
     );
 
 
+
 /*
-    Senarai bahagian pola
+    Data ukuran badan
+*/
+
+let bodyMeasurements = {
+
+    unit: "cm",
+
+    shoulder: null,
+
+    chest: null,
+
+    waist: null,
+
+    hip: null,
+
+    neck: null,
+
+    backLength: null
+
+};
+
+
+
+let stream = null;
+
+let animationFrame = null;
+
+
+
+/*
+    SENARAI BAHAGIAN POLA
 */
 
 const patternOptions = {
@@ -82,246 +115,287 @@ const patternOptions = {
 };
 
 
+
 /*
-    Tukar pilihan bahagian
-    berdasarkan jenis pakaian
+    PILIH JENIS PAKAIAN
 */
 
-garmentType.addEventListener(
+if (garmentType) {
+
+    garmentType.addEventListener(
+        "change",
+        () => {
+
+            const selectedType =
+                garmentType.value;
+
+
+            patternPart.innerHTML =
+                `
+                <option value="">
+                    -- Pilih bahagian pola --
+                </option>
+                `;
+
+
+            if (
+                !patternOptions[selectedType]
+            ) {
+
+                patternSelectionStatus.textContent =
+                    "";
+
+                return;
+
+            }
+
+
+            patternOptions[selectedType]
+                .forEach(
+                    (part) => {
+
+                        const option =
+                            document.createElement(
+                                "option"
+                            );
+
+
+                        option.value =
+                            part;
+
+
+                        option.textContent =
+                            part;
+
+
+                        patternPart.appendChild(
+                            option
+                        );
+
+                    }
+                );
+
+
+            patternSelectionStatus.textContent =
+                "Jenis pakaian dipilih. Sila pilih bahagian pola.";
+
+            patternSelectionStatus.style.color =
+                "#111827";
+
+        }
+    );
+
+}
+
+
+
+/*
+    PILIH BAHAGIAN POLA
+*/
+
+if (patternPart) {
+
+    patternPart.addEventListener(
+        "change",
+        () => {
+
+            if (
+                garmentType.value &&
+                patternPart.value
+            ) {
+
+                const garmentName =
+                    garmentType.options[
+                        garmentType.selectedIndex
+                    ].text;
+
+
+                patternSelectionStatus.textContent =
+                    `Pola dipilih: ${garmentName} — ${patternPart.value}`;
+
+
+                patternSelectionStatus.style.color =
+                    "#166534";
+
+            }
+
+        }
+    );
+
+}
+
+
+
+/*
+    TUKAR UNIT
+*/
+
+unitSelect.addEventListener(
     "change",
     () => {
 
-        const selectedType =
-            garmentType.value;
+        const selectedUnit =
+            unitSelect.value;
 
 
-        patternPart.innerHTML =
-            `
-            <option value="">
-                -- Pilih bahagian pola --
-            </option>
-            `;
+        const label =
+            selectedUnit === "cm"
+                ? "cm"
+                : "in";
 
 
-        if (
-            !patternOptions[selectedType]
-        ) {
+        unitLabels.forEach(
+            (element) => {
 
-            patternSelectionStatus.textContent =
-                "";
+                element.textContent =
+                    label;
+
+            }
+        );
+
+    }
+);
+
+
+
+/*
+    SIMPAN UKURAN BADAN
+*/
+
+saveMeasurementsButton.addEventListener(
+    "click",
+    () => {
+
+        const unit =
+            unitSelect.value;
+
+
+        const shoulder =
+            parseFloat(
+                shoulderInput.value
+            );
+
+
+        const chest =
+            parseFloat(
+                chestInput.value
+            );
+
+
+        const waist =
+            parseFloat(
+                waistInput.value
+            );
+
+
+        const hip =
+            parseFloat(
+                hipInput.value
+            );
+
+
+        const neck =
+            parseFloat(
+                neckInput.value
+            );
+
+
+        const backLength =
+            parseFloat(
+                backLengthInput.value
+            );
+
+
+        const values = [
+
+            shoulder,
+            chest,
+            waist,
+            hip,
+            neck,
+            backLength
+
+        ];
+
+
+        const invalidValue =
+            values.some(
+                value =>
+                    !Number.isFinite(value) ||
+                    value <= 0
+            );
+
+
+        if (invalidValue) {
+
+            measurementStatus.textContent =
+                "Sila lengkapkan semua 6 ukuran dengan nilai yang betul.";
+
+            measurementStatus.style.color =
+                "#b91c1c";
 
             return;
 
         }
 
 
-        patternOptions[selectedType]
-            .forEach(
-                (part) => {
+        bodyMeasurements = {
 
-                    const option =
-                        document.createElement(
-                            "option"
-                        );
+            unit: unit,
 
+            shoulder: shoulder,
 
-                    option.value =
-                        part;
+            chest: chest,
 
+            waist: waist,
 
-                    option.textContent =
-                        part;
+            hip: hip,
 
+            neck: neck,
 
-                    patternPart.appendChild(
-                        option
-                    );
+            backLength: backLength
 
-                }
-            );
+        };
 
 
-        patternSelectionStatus.textContent =
-            "Jenis pakaian dipilih. Sila pilih bahagian pola.";
-
-    }
-);
-
-
-/*
-    Simpan pilihan bahagian pola
-*/
-
-patternPart.addEventListener(
-    "change",
-    () => {
-
-        if (
-            garmentType.value &&
-            patternPart.value
-        ) {
-
-            patternSelectionStatus.textContent =
-                `Pola dipilih: ${garmentType.options[garmentType.selectedIndex].text} — ${patternPart.value}`;
-
-            patternSelectionStatus.style.color =
-                "#166534";
-
-        }
-
-    }
-);
-
-
-let stream = null;
-let animationFrame = null;
-
-
-/*
-    Data ukuran badan
-*/
-
-let bodyMeasurements = {
-    unit: "cm",
-    shoulder: null,
-    chest: null,
-    waist: null,
-    hip: null,
-    neck: null,
-    backLength: null
-};
-
-
-/*
-    Tukar label unit
-*/
-
-unitSelect.addEventListener("change", () => {
-
-    const selectedUnit = unitSelect.value;
-
-    const label =
-        selectedUnit === "cm"
-            ? "cm"
-            : "in";
-
-    unitLabels.forEach((element) => {
-        element.textContent = label;
-    });
-
-});
-
-
-/*
-    Simpan ukuran badan
-*/
-
-saveMeasurementsButton.addEventListener("click", () => {
-
-    const unit = unitSelect.value;
-
-    const shoulder =
-        parseFloat(shoulderInput.value);
-
-    const chest =
-        parseFloat(chestInput.value);
-
-    const waist =
-        parseFloat(waistInput.value);
-
-    const hip =
-        parseFloat(hipInput.value);
-
-    const neck =
-        parseFloat(neckInput.value);
-
-    const backLength =
-        parseFloat(backLengthInput.value);
-
-
-    const values = [
-        shoulder,
-        chest,
-        waist,
-        hip,
-        neck,
-        backLength
-    ];
-
-
-    const invalidValue =
-        values.some(
-            value =>
-                !Number.isFinite(value) ||
-                value <= 0
+        localStorage.setItem(
+            "smartPolaMeasurements",
+            JSON.stringify(
+                bodyMeasurements
+            )
         );
 
 
-    if (invalidValue) {
+        const unitText =
+            unit === "cm"
+                ? "cm"
+                : "in";
+
 
         measurementStatus.textContent =
-            "Sila lengkapkan semua 6 ukuran dengan nilai yang betul.";
+            `Ukuran disimpan (${unitText}) — ` +
+            `Bahu: ${shoulder} | ` +
+            `Dada: ${chest} | ` +
+            `Pinggang: ${waist} | ` +
+            `Pinggul: ${hip} | ` +
+            `Leher: ${neck} | ` +
+            `Labuh Tengah Belakang: ${backLength}`;
+
 
         measurementStatus.style.color =
-            "#b91c1c";
+            "#166534";
 
-        return;
+
+        statusText.textContent =
+            "Ukuran badan telah disimpan. Kamera sedia digunakan.";
+
     }
+);
 
-
-    bodyMeasurements = {
-
-        unit: unit,
-
-        shoulder: shoulder,
-
-        chest: chest,
-
-        waist: waist,
-
-        hip: hip,
-
-        neck: neck,
-
-        backLength: backLength
-
-    };
-
-
-    localStorage.setItem(
-        "smartPolaMeasurements",
-        JSON.stringify(bodyMeasurements)
-    );
-
-
-    const unitText =
-        unit === "cm"
-            ? "cm"
-            : "in";
-
-
-    measurementStatus.textContent =
-        `Ukuran disimpan (${unitText}) — ` +
-        `Bahu: ${shoulder} | ` +
-        `Dada: ${chest} | ` +
-        `Pinggang: ${waist} | ` +
-        `Pinggul: ${hip} | ` +
-        `Leher: ${neck} | ` +
-        `Labuh Tengah Belakang: ${backLength}`;
-
-
-    measurementStatus.style.color =
-        "#166534";
-
-
-    statusText.textContent =
-        "Ukuran badan telah disimpan. Kamera sedia digunakan.";
-
-});
 
 
 /*
-    Muat ukuran yang pernah disimpan
+    MUAT UKURAN YANG DISIMPAN
 */
 
 function loadMeasurements() {
@@ -333,37 +407,53 @@ function loadMeasurements() {
 
 
     if (!savedMeasurements) {
+
         return;
+
     }
 
 
     try {
 
         bodyMeasurements =
-            JSON.parse(savedMeasurements);
+            JSON.parse(
+                savedMeasurements
+            );
 
 
         unitSelect.value =
-            bodyMeasurements.unit || "cm";
+            bodyMeasurements.unit ||
+            "cm";
 
 
         shoulderInput.value =
-            bodyMeasurements.shoulder ?? "";
+            bodyMeasurements.shoulder ??
+            "";
+
 
         chestInput.value =
-            bodyMeasurements.chest ?? "";
+            bodyMeasurements.chest ??
+            "";
+
 
         waistInput.value =
-            bodyMeasurements.waist ?? "";
+            bodyMeasurements.waist ??
+            "";
+
 
         hipInput.value =
-            bodyMeasurements.hip ?? "";
+            bodyMeasurements.hip ??
+            "";
+
 
         neckInput.value =
-            bodyMeasurements.neck ?? "";
+            bodyMeasurements.neck ??
+            "";
+
 
         backLengthInput.value =
-            bodyMeasurements.backLength ?? "";
+            bodyMeasurements.backLength ??
+            "";
 
 
         const label =
@@ -372,13 +462,19 @@ function loadMeasurements() {
                 : "in";
 
 
-        unitLabels.forEach((element) => {
-            element.textContent = label;
-        });
+        unitLabels.forEach(
+            (element) => {
+
+                element.textContent =
+                    label;
+
+            }
+        );
 
 
         measurementStatus.textContent =
             "Ukuran badan sebelumnya telah dimuatkan.";
+
 
         measurementStatus.style.color =
             "#166534";
@@ -396,8 +492,9 @@ function loadMeasurements() {
 }
 
 
+
 /*
-    Mula kamera
+    MULA KAMERA
 */
 
 startButton.addEventListener(
@@ -405,6 +502,7 @@ startButton.addEventListener(
     async () => {
 
         const measurementsComplete =
+
             bodyMeasurements.shoulder &&
             bodyMeasurements.chest &&
             bodyMeasurements.waist &&
@@ -419,6 +517,20 @@ startButton.addEventListener(
                 "Sila lengkapkan dan simpan semua ukuran badan terlebih dahulu.";
 
             return;
+
+        }
+
+
+        if (
+            !garmentType.value ||
+            !patternPart.value
+        ) {
+
+            statusText.textContent =
+                "Sila pilih jenis pakaian dan bahagian pola terlebih dahulu.";
+
+            return;
+
         }
 
 
@@ -460,6 +572,7 @@ startButton.addEventListener(
             startButton.disabled =
                 true;
 
+
             stopButton.disabled =
                 false;
 
@@ -495,8 +608,9 @@ startButton.addEventListener(
 );
 
 
+
 /*
-    Henti kamera
+    HENTI KAMERA
 */
 
 stopButton.addEventListener(
@@ -507,6 +621,7 @@ stopButton.addEventListener(
 
     }
 );
+
 
 
 function stopCamera() {
@@ -520,7 +635,9 @@ function stopCamera() {
                     track.stop()
             );
 
+
         stream = null;
+
     }
 
 
@@ -530,7 +647,9 @@ function stopCamera() {
             animationFrame
         );
 
+
         animationFrame = null;
+
     }
 
 
@@ -540,6 +659,7 @@ function stopCamera() {
 
     startButton.disabled =
         false;
+
 
     stopButton.disabled =
         true;
@@ -563,8 +683,9 @@ function stopCamera() {
 }
 
 
+
 /*
-    Kesan garisan pola
+    KESAN GARISAN POLA
 */
 
 function detectPatternLines() {
@@ -580,7 +701,14 @@ function detectPatternLines() {
             );
 
         return;
+
     }
+
+
+    const canvas =
+        document.createElement(
+            "canvas"
+        );
 
 
     const context =
@@ -593,11 +721,14 @@ function detectPatternLines() {
 
 
     const overlayContext =
-        overlayCanvas.getContext("2d");
+        overlayCanvas.getContext(
+            "2d"
+        );
 
 
     canvas.width =
         video.videoWidth;
+
 
     canvas.height =
         video.videoHeight;
@@ -606,13 +737,10 @@ function detectPatternLines() {
     overlayCanvas.width =
         video.videoWidth;
 
+
     overlayCanvas.height =
         video.videoHeight;
 
-
-    /*
-        Ambil imej daripada kamera
-    */
 
     context.drawImage(
         video,
@@ -636,10 +764,6 @@ function detectPatternLines() {
         image.data;
 
 
-    /*
-        Kosongkan overlay sebelumnya
-    */
-
     overlayContext.clearRect(
         0,
         0,
@@ -648,20 +772,12 @@ function detectPatternLines() {
     );
 
 
-    /*
-        Warna garisan yang dikesan
-    */
-
     overlayContext.fillStyle =
         "rgba(0, 255, 0, 0.9)";
 
 
     let edgePixels = 0;
 
-
-    /*
-        Kesan perubahan brightness
-    */
 
     for (
         let y = 1;
@@ -676,11 +792,19 @@ function detectPatternLines() {
         ) {
 
             const currentIndex =
-                (y * canvas.width + x) * 4;
+                (
+                    y *
+                    canvas.width +
+                    x
+                ) * 4;
 
 
             const rightIndex =
-                (y * canvas.width + (x + 1)) * 4;
+                (
+                    y *
+                    canvas.width +
+                    x + 1
+                ) * 4;
 
 
             const currentBrightness =
@@ -713,10 +837,6 @@ function detectPatternLines() {
                 edgePixels++;
 
 
-                /*
-                    Lukis titik pada garisan
-                */
-
                 overlayContext.fillRect(
                     x,
                     y,
@@ -731,15 +851,13 @@ function detectPatternLines() {
     }
 
 
-    /*
-        Tentukan tahap pengesanan
-    */
-
     const detectionLevel =
         edgePixels /
         (
-            (canvas.width *
-            canvas.height) / 9
+            (
+                canvas.width *
+                canvas.height
+            ) / 9
         );
 
 
@@ -750,6 +868,7 @@ function detectPatternLines() {
         statusText.textContent =
             "Garisan pola dikesan.";
 
+
         lineStatus.textContent =
             "Dikesan";
 
@@ -757,13 +876,13 @@ function detectPatternLines() {
         patternMeasurement.textContent =
             "Menunggu ukuran";
 
-
     }
 
     else {
 
         statusText.textContent =
             "Mengesan garisan pola...";
+
 
         lineStatus.textContent =
             "Mengesan...";
@@ -778,156 +897,10 @@ function detectPatternLines() {
 
 }
 
-    if (
-        !stream ||
-        video.readyState < 2
-    ) {
-
-        animationFrame =
-            requestAnimationFrame(
-                detectPatternLines
-            );
-
-        return;
-    }
-
-
-    const context =
-        canvas.getContext(
-            "2d",
-            {
-                willReadFrequently: true
-            }
-        );
-
-
-    canvas.width =
-        video.videoWidth;
-
-    canvas.height =
-        video.videoHeight;
-
-
-    context.drawImage(
-        video,
-        0,
-        0,
-        canvas.width,
-        canvas.height
-    );
-
-
-    const image =
-        context.getImageData(
-            0,
-            0,
-            canvas.width,
-            canvas.height
-        );
-
-
-    const data =
-        image.data;
-
-
-    let edgePixels = 0;
-
-
-    for (
-        let y = 1;
-        y < canvas.height - 1;
-        y += 4
-    ) {
-
-        for (
-            let x = 1;
-            x < canvas.width - 1;
-            x += 4
-        ) {
-
-            const currentIndex =
-                (y * canvas.width + x) * 4;
-
-
-            const rightIndex =
-                (y * canvas.width + (x + 1)) * 4;
-
-
-            const currentBrightness =
-                (
-                    data[currentIndex] +
-                    data[currentIndex + 1] +
-                    data[currentIndex + 2]
-                ) / 3;
-
-
-            const rightBrightness =
-                (
-                    data[rightIndex] +
-                    data[rightIndex + 1] +
-                    data[rightIndex + 2]
-                ) / 3;
-
-
-            const difference =
-                Math.abs(
-                    currentBrightness -
-                    rightBrightness
-                );
-
-
-            if (difference > 45) {
-
-                edgePixels++;
-
-            }
-
-        }
-
-    }
-
-
-    const detectionLevel =
-        edgePixels /
-        (
-            (canvas.width *
-            canvas.height) / 16
-        );
-
-
-    if (
-        detectionLevel > 0.015
-    ) {
-
-        statusText.textContent =
-            "Garisan pola dikesan.";
-
-        lineStatus.textContent =
-            "Dikesan";
-
-    }
-
-    else {
-
-        statusText.textContent =
-            "Mengesan garisan pola...";
-
-        lineStatus.textContent =
-            "Mengesan...";
-
-    }
-
-
-    animationFrame =
-        requestAnimationFrame(
-            detectPatternLines
-        );
-
-}
 
 
 /*
-    Jalankan sistem
+    JALANKAN SISTEM
 */
 
 loadMeasurements();
