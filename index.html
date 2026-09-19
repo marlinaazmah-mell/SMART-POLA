@@ -12,51 +12,258 @@
 
 <body>
 
-    <header class="header">
+<header class="header">
 
-        <div>
+    <h1>SMART-POLA</h1>
 
-            <h1>SMART-POLA</h1>
+    <p>
+        Sistem Semakan Pola Pakaian Berasaskan AI
+    </p>
 
-            <p>
-                AI-Powered Garment Pattern Checking System
-            </p>
+</header>
+
+
+<main class="container">
+
+
+    <!-- 1. DATA UKURAN BADAN -->
+
+    <section class="card">
+
+        <h2>1. Data Ukuran Badan</h2>
+
+        <p class="description">
+            Masukkan ukuran badan sebelum membuat semakan pola.
+        </p>
+
+
+        <div class="measurement-grid">
+
+
+            <div class="measurement">
+
+                <label for="shoulder">
+                    Lebar Bahu
+                </label>
+
+                <div class="input-unit">
+
+                    <input
+                        type="number"
+                        id="shoulder"
+                        placeholder="Contoh: 38"
+                        step="0.1"
+                    >
+
+                    <span class="unit-label">
+                        cm
+                    </span>
+
+                </div>
+
+            </div>
+
+
+            <div class="measurement">
+
+                <label for="chest">
+                    Keliling Dada
+                </label>
+
+                <div class="input-unit">
+
+                    <input
+                        type="number"
+                        id="chest"
+                        placeholder="Contoh: 90"
+                        step="0.1"
+                    >
+
+                    <span class="unit-label">
+                        cm
+                    </span>
+
+                </div>
+
+            </div>
+
+
+            <div class="measurement">
+
+                <label for="waist">
+                    Keliling Pinggang
+                </label>
+
+                <div class="input-unit">
+
+                    <input
+                        type="number"
+                        id="waist"
+                        placeholder="Contoh: 76"
+                        step="0.1"
+                    >
+
+                    <span class="unit-label">
+                        cm
+                    </span>
+
+                </div>
+
+            </div>
+
+
+            <div class="measurement">
+
+                <label for="hip">
+                    Keliling Pinggul
+                </label>
+
+                <div class="input-unit">
+
+                    <input
+                        type="number"
+                        id="hip"
+                        placeholder="Contoh: 96"
+                        step="0.1"
+                    >
+
+                    <span class="unit-label">
+                        cm
+                    </span>
+
+                </div>
+
+            </div>
+
+
+            <div class="measurement">
+
+                <label for="neck">
+                    Keliling Leher
+                </label>
+
+                <div class="input-unit">
+
+                    <input
+                        type="number"
+                        id="neck"
+                        placeholder="Contoh: 36"
+                        step="0.1"
+                    >
+
+                    <span class="unit-label">
+                        cm
+                    </span>
+
+                </div>
+
+            </div>
+
+
+            <div class="measurement">
+
+                <label for="backLength">
+                    Labuh Tengah Belakang
+                </label>
+
+                <div class="input-unit">
+
+                    <input
+                        type="number"
+                        id="backLength"
+                        placeholder="Contoh: 40"
+                        step="0.1"
+                    >
+
+                    <span class="unit-label">
+                        cm
+                    </span>
+
+                </div>
+
+            </div>
 
         </div>
 
-    </header>
+
+        <div style="margin-bottom: 15px;">
+
+            <label for="unit">
+                Unit ukuran
+            </label>
+
+            <select id="unit">
+
+                <option value="cm">
+                    Sentimeter (cm)
+                </option>
+
+                <option value="in">
+                    Inci (in)
+                </option>
+
+            </select>
+
+        </div>
 
 
-    <main class="container">
+        <button
+            id="saveMeasurements"
+            class="primary-button"
+        >
+            Simpan Ukuran
+        </button>
 
 
-        <!-- 1. DATA UKURAN BADAN -->
+        <p
+            id="measurementStatus"
+            class="status"
+        ></p>
 
-        <section class="card">
-
-            <h2>1. Data Ukuran Badan</h2>
-
-            <p class="description">
-                Masukkan ukuran sebenar badan sebelum proses semakan pola.
-            </p>
+    </section>
 
 
-            <!-- UNIT -->
 
-            <div class="measurement-unit">
+    <!-- 2. TETAPAN POLA -->
 
-                <label for="unit">
-                    <strong>Unit ukuran</strong>
+    <section class="card">
+
+        <h2>2. Tetapan Pola</h2>
+
+        <p class="description">
+            Pilih jenis pakaian dan bahagian pola yang hendak disemak.
+        </p>
+
+
+        <div class="pattern-selection">
+
+
+            <div class="pattern-field">
+
+                <label for="garmentType">
+                    Jenis Pakaian
                 </label>
 
-                <select id="unit">
+                <select id="garmentType">
 
-                    <option value="cm">
-                        Sentimeter (cm)
+                    <option value="">
+                        -- Pilih jenis pakaian --
                     </option>
 
-                    <option value="inch">
-                        Inci (in)
+                    <option value="baju">
+                        Baju
+                    </option>
+
+                    <option value="kain">
+                        Kain
+                    </option>
+
+                    <option value="seluar">
+                        Seluar
+                    </option>
+
+                    <option value="lain">
+                        Lain-lain
                     </option>
 
                 </select>
@@ -64,435 +271,202 @@
             </div>
 
 
-            <!-- UKURAN -->
+            <div class="pattern-field">
 
-            <div class="measurement-grid">
+                <label for="patternPart">
+                    Bahagian Pola
+                </label>
 
+                <select id="patternPart">
 
-                <div class="measurement">
+                    <option value="">
+                        -- Pilih bahagian pola --
+                    </option>
 
-                    <label for="shoulder">
-                        Lebar Bahu
-                    </label>
-
-                    <div class="input-unit">
-
-                        <input
-                            type="number"
-                            id="shoulder"
-                            min="0"
-                            step="0.1"
-                            placeholder="Contoh: 38"
-                        >
-
-                        <span class="unit-label">
-                            cm
-                        </span>
-
-                    </div>
-
-                </div>
-
-
-                <div class="measurement">
-
-                    <label for="chest">
-                        Keliling Dada
-                    </label>
-
-                    <div class="input-unit">
-
-                        <input
-                            type="number"
-                            id="chest"
-                            min="0"
-                            step="0.1"
-                            placeholder="Contoh: 92"
-                        >
-
-                        <span class="unit-label">
-                            cm
-                        </span>
-
-                    </div>
-
-                </div>
-
-
-                <div class="measurement">
-
-                    <label for="waist">
-                        Keliling Pinggang
-                    </label>
-
-                    <div class="input-unit">
-
-                        <input
-                            type="number"
-                            id="waist"
-                            min="0"
-                            step="0.1"
-                            placeholder="Contoh: 76"
-                        >
-
-                        <span class="unit-label">
-                            cm
-                        </span>
-
-                    </div>
-
-                </div>
-
-
-                <div class="measurement">
-
-                    <label for="hip">
-                        Keliling Pinggul
-                    </label>
-
-                    <div class="input-unit">
-
-                        <input
-                            type="number"
-                            id="hip"
-                            min="0"
-                            step="0.1"
-                            placeholder="Contoh: 98"
-                        >
-
-                        <span class="unit-label">
-                            cm
-                        </span>
-
-                    </div>
-
-                </div>
-
-
-                <div class="measurement">
-
-                    <label for="neck">
-                        Keliling Leher
-                    </label>
-
-                    <div class="input-unit">
-
-                        <input
-                            type="number"
-                            id="neck"
-                            min="0"
-                            step="0.1"
-                            placeholder="Contoh: 36"
-                        >
-
-                        <span class="unit-label">
-                            cm
-                        </span>
-
-                    </div>
-
-                </div>
-
-
-                <div class="measurement">
-
-                    <label for="backLength">
-                        Labuh Tengah Belakang
-                    </label>
-
-                    <div class="input-unit">
-
-                        <input
-                            type="number"
-                            id="backLength"
-                            min="0"
-                            step="0.1"
-                            placeholder="Contoh: 40"
-                        >
-
-                        <span class="unit-label">
-                            cm
-                        </span>
-
-                    </div>
-
-                </div>
+                </select>
 
             </div>
-
-
-            <button
-                type="button"
-                id="saveMeasurements"
-                class="primary-button"
-            >
-                Simpan Ukuran
-            </button>
-
-
-            <p
-                id="measurementStatus"
-                class="status"
-            ></p>
-
-        </section>
-
-<!--2. JENIS POLA -->
-
-<section class="card">
-
-    <h2>2. Tetapan Pola</h2>
-
-    <p class="description">
-        Pilih jenis pakaian dan bahagian pola yang hendak disemak.
-    </p>
-
-    <div class="pattern-selection">
-
-        <div class="pattern-field">
-
-            <label for="garmentType">
-                Jenis Pakaian
-            </label>
-
-            <select id="garmentType">
-
-                <option value="">
-                    -- Pilih jenis pakaian --
-                </option>
-
-                <option value="baju">
-                    Baju
-                </option>
-
-                <option value="kain">
-                    Kain
-                </option>
-
-                <option value="seluar">
-                    Seluar
-                </option>
-
-                <option value="lain">
-                    Lain-lain
-                </option>
-
-            </select>
 
         </div>
 
 
-        <div class="pattern-field">
+        <p
+            id="patternSelectionStatus"
+            class="status"
+        ></p>
 
-            <label for="patternPart">
-                Bahagian Pola
-            </label>
+    </section>
 
-            <select id="patternPart">
 
-                <option value="">
-                    -- Pilih bahagian pola --
-                </option>
 
-            </select>
+    <!-- 3. IMBAS POLA -->
 
-        </div>
+    <section class="card">
 
-    </div>
+        <h2>3. Imbas Pola</h2>
 
-    <p
-        id="patternSelectionStatus"
-        class="status"
-    ></p>
-
-</section>
-
-        <!-- 3. IMBAS POLA -->
-
-        <section class="card">
-
-            <h2>2. Imbas Pola</h2>
-
-            <p class="description">
-                Gunakan kamera untuk mengimbas pola pakaian.
-            </p>
-
-
-            <div class="camera-container">
-
-                <video
-                    id="camera"
-                    autoplay
-                    playsinline
-                    muted
-                ></video>
-
-
-                <!--
-                    Canvas untuk memaparkan
-                    garisan yang dikesan
-                -->
-
-                <canvas
-                    id="overlayCanvas"
-                ></canvas>
-
-            </div>
-
-
-            <div class="camera-controls">
-
-                <button
-                    type="button"
-                    id="startCamera"
-                    class="primary-button"
-                >
-                    Mula Imbas
-                </button>
-
-
-                <button
-                    type="button"
-                    id="stopCamera"
-                    class="secondary-button"
-                    disabled
-                >
-                    Henti Kamera
-                </button>
-
-            </div>
-
-
-            <div class="status-box">
-
-                <strong>Status:</strong>
-
-                <span id="status">
-                    Kamera belum diaktifkan.
-                </span>
-
-            </div>
-
-        </section>
-
-
-
-        <!-- 4. ANALISIS POLA -->
-
-        <section class="card">
-
-            <h2>3. Analisis Pola</h2>
-
-
-            <div class="analysis-grid">
-
-
-                <div class="analysis-item">
-
-                    <span>
-                        Garisan pola
-                    </span>
-
-                    <strong id="lineStatus">
-                        Belum dianalisis
-                    </strong>
-
-                </div>
-
-
-                <div class="analysis-item">
-
-                    <span>
-                        Ukuran pola
-                    </span>
-
-                    <strong id="patternMeasurement">
-                        Menunggu imbasan
-                    </strong>
-
-                </div>
-
-
-                <div class="analysis-item">
-
-                    <span>
-                        Semakan formula
-                    </span>
-
-                    <strong id="formulaStatus">
-                        Belum tersedia
-                    </strong>
-
-                </div>
-
-            </div>
-
-        </section>
-
-
-
-        <!-- 5. KEPUTUSAN -->
-
-        <section class="card">
-
-            <h2>4. Keputusan</h2>
-
-
-            <div
-                id="resultBox"
-                class="result-box"
-            >
-
-                <span>
-                    Keputusan akan dipaparkan selepas analisis.
-                </span>
-
-            </div>
-
-        </section>
-
-
-
-        <!-- 6. SMART-POLA PASSPORT -->
-
-        <section class="card">
-
-            <h2>
-                5. SMART-POLA Passport
-            </h2>
-
-
-            <p class="description">
-                Rekod digital pencapaian dan semakan pola pelatih.
-            </p>
-
-
-            <div class="passport-placeholder">
-
-                <p>
-                    Rekod akan tersedia selepas sistem semakan pola dibangunkan.
-                </p>
-
-            </div>
-
-        </section>
-
-
-    </main>
-
-
-
-    <footer>
-
-        <p>
-            SMART-POLA © 2026
+        <p class="description">
+            Gunakan kamera untuk mengimbas pola pakaian.
         </p>
 
-    </footer>
+
+        <div class="camera-container">
+
+            <video
+                id="camera"
+                autoplay
+                playsinline
+            ></video>
+
+            <canvas
+                id="overlayCanvas"
+                class="overlay-canvas"
+            ></canvas>
+
+        </div>
+
+
+        <div class="camera-controls">
+
+            <button
+                id="startCamera"
+                class="primary-button"
+            >
+                Mula Kamera
+            </button>
+
+            <button
+                id="stopCamera"
+                class="secondary-button"
+                disabled
+            >
+                Henti Kamera
+            </button>
+
+        </div>
+
+
+        <div class="status-box">
+
+            <strong>Status:</strong>
+
+            <span id="status">
+                Kamera belum diaktifkan.
+            </span>
+
+        </div>
+
+    </section>
 
 
 
-    <script src="app.js"></script>
+    <!-- 4. ANALISIS POLA -->
+
+    <section class="card">
+
+        <h2>4. Analisis Pola</h2>
+
+
+        <div class="analysis-grid">
+
+
+            <div class="analysis-item">
+
+                <span>
+                    Garisan Pola
+                </span>
+
+                <strong id="lineStatus">
+                    Belum dianalisis
+                </strong>
+
+            </div>
+
+
+            <div class="analysis-item">
+
+                <span>
+                    Ukuran Pola
+                </span>
+
+                <strong id="patternMeasurement">
+                    Menunggu imbasan
+                </strong>
+
+            </div>
+
+
+            <div class="analysis-item">
+
+                <span>
+                    Formula
+                </span>
+
+                <strong id="formulaStatus">
+                    Belum tersedia
+                </strong>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+
+    <!-- 5. KEPUTUSAN -->
+
+    <section class="card">
+
+        <h2>5. Keputusan Semakan</h2>
+
+
+        <div class="result-box">
+
+            <h3 id="resultStatus">
+                Belum disemak
+            </h3>
+
+            <p>
+                Keputusan akan dipaparkan selepas
+                analisis pola dijalankan.
+            </p>
+
+        </div>
+
+    </section>
+
+
+
+    <!-- 6. SMART-POLA PASSPORT -->
+
+    <section class="card">
+
+        <h2>6. SMART-POLA Passport</h2>
+
+
+        <div class="passport-placeholder">
+
+            Rekod pencapaian dan status semakan
+            akan dipaparkan di sini.
+
+        </div>
+
+    </section>
+
+
+</main>
+
+
+
+<footer>
+
+    SMART-POLA © 2026
+
+</footer>
+
+
+<script src="app.js"></script>
 
 </body>
 
