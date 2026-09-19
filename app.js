@@ -15,8 +15,7 @@ const hipInput = document.getElementById("hip");
 const neckInput = document.getElementById("neck");
 const backLengthInput = document.getElementById("backLength");
 
-const unitLabels =
-    document.querySelectorAll(".unit-label");
+const unitLabels = document.querySelectorAll(".unit-label");
 
 const saveMeasurementsButton =
     document.getElementById("saveMeasurements");
@@ -42,6 +41,16 @@ const patternPart =
 const patternSelectionStatus =
     document.getElementById("patternSelectionStatus");
 
+const resultTitle =
+    document.getElementById("resultTitle");
+
+const resultMessage =
+    document.getElementById("resultMessage");
+
+
+/* =========================
+   DATA
+   ========================= */
 
 let bodyMeasurements = {
     unit: "cm",
@@ -53,14 +62,13 @@ let bodyMeasurements = {
     backLength: null
 };
 
-
 let stream = null;
 let animationFrame = null;
 
 
-/* ========================= */
-/* PILIHAN BAHAGIAN POLA */
-/* ========================= */
+/* =========================
+   SENARAI BAHAGIAN POLA
+   ========================= */
 
 const patternOptions = {
 
@@ -87,187 +95,168 @@ const patternOptions = {
     lain: [
         "Bahagian Lain"
     ]
-
 };
 
 
-/* ========================= */
-/* JENIS PAKAIAN */
-/* ========================= */
+/* =========================
+   DROPDOWN JENIS PAKAIAN
+   ========================= */
 
-garmentType.addEventListener(
-    "change",
-    () => {
+garmentType.addEventListener("change", function () {
 
-        const selectedType =
-            garmentType.value;
+    const selectedType = garmentType.value;
+
+    /*
+       Kosongkan dropdown Bahagian Pola
+    */
+
+    patternPart.innerHTML = "";
+
+    /*
+       Letakkan pilihan asal
+    */
+
+    const defaultOption =
+        document.createElement("option");
+
+    defaultOption.value = "";
+
+    defaultOption.textContent =
+        "-- Pilih bahagian pola --";
+
+    patternPart.appendChild(defaultOption);
+
+    /*
+       Jika belum pilih jenis pakaian,
+       disable dropdown kedua.
+    */
+
+    if (!selectedType) {
+
+        patternPart.disabled = true;
+
+        patternSelectionStatus.textContent = "";
+
+        return;
+    }
+
+    /*
+       Aktifkan dropdown kedua.
+    */
+
+    patternPart.disabled = false;
+
+    /*
+       Masukkan bahagian pola berdasarkan
+       jenis pakaian yang dipilih.
+    */
+
+    const selectedParts =
+        patternOptions[selectedType];
+
+    if (selectedParts) {
+
+        selectedParts.forEach(function (part) {
+
+            const option =
+                document.createElement("option");
+
+            option.value = part;
+
+            option.textContent = part;
+
+            patternPart.appendChild(option);
+
+        });
+
+    }
+
+    patternSelectionStatus.textContent =
+        "Sila pilih bahagian pola.";
+
+    patternSelectionStatus.style.color =
+        "#111827";
+});
 
 
-        patternPart.innerHTML = "";
+/* =========================
+   DROPDOWN BAHAGIAN POLA
+   ========================= */
 
+patternPart.addEventListener("change", function () {
 
-        const defaultOption =
-            document.createElement("option");
+    if (
+        garmentType.value &&
+        patternPart.value
+    ) {
 
-        defaultOption.value = "";
-
-        defaultOption.textContent =
-            "-- Pilih bahagian pola --";
-
-        patternPart.appendChild(
-            defaultOption
-        );
-
-
-        if (
-            !patternOptions[selectedType]
-        ) {
-
-            patternSelectionStatus.textContent =
-                "";
-
-            return;
-
-        }
-
-
-        patternOptions[selectedType]
-            .forEach(
-                (part) => {
-
-                    const option =
-                        document.createElement(
-                            "option"
-                        );
-
-                    option.value =
-                        part;
-
-                    option.textContent =
-                        part;
-
-                    patternPart.appendChild(
-                        option
-                    );
-
-                }
-            );
-
+        const garmentName =
+            garmentType.options[
+                garmentType.selectedIndex
+            ].text;
 
         patternSelectionStatus.textContent =
-            "Sila pilih bahagian pola.";
+            "Pola dipilih: " +
+            garmentName +
+            " — " +
+            patternPart.value;
 
         patternSelectionStatus.style.color =
-            "#111827";
-
+            "#166534";
     }
-);
+});
 
 
-/* ========================= */
-/* BAHAGIAN POLA */
-/* ========================= */
+/* =========================
+   UNIT
+   ========================= */
 
-patternPart.addEventListener(
-    "change",
-    () => {
+unitSelect.addEventListener("change", function () {
 
-        if (
-            garmentType.value &&
-            patternPart.value
-        ) {
+    const selectedUnit =
+        unitSelect.value;
 
-            const garmentName =
-                garmentType.options[
-                    garmentType.selectedIndex
-                ].text;
+    const label =
+        selectedUnit === "cm"
+            ? "cm"
+            : "in";
 
+    unitLabels.forEach(function (element) {
 
-            patternSelectionStatus.textContent =
-                `Pola dipilih: ${garmentName} — ${patternPart.value}`;
+        element.textContent = label;
 
-
-            patternSelectionStatus.style.color =
-                "#166534";
-
-        }
-
-    }
-);
+    });
+});
 
 
-/* ========================= */
-/* UNIT */
-/* ========================= */
-
-unitSelect.addEventListener(
-    "change",
-    () => {
-
-        const selectedUnit =
-            unitSelect.value;
-
-
-        const label =
-            selectedUnit === "cm"
-                ? "cm"
-                : "in";
-
-
-        unitLabels.forEach(
-            (element) => {
-
-                element.textContent =
-                    label;
-
-            }
-        );
-
-    }
-);
-
-
-/* ========================= */
-/* SIMPAN UKURAN */
-/* ========================= */
+/* =========================
+   SIMPAN UKURAN
+   ========================= */
 
 saveMeasurementsButton.addEventListener(
     "click",
-    () => {
+    function () {
 
         const unit =
             unitSelect.value;
 
-
         const shoulder =
-            parseFloat(
-                shoulderInput.value
-            );
+            parseFloat(shoulderInput.value);
 
         const chest =
-            parseFloat(
-                chestInput.value
-            );
+            parseFloat(chestInput.value);
 
         const waist =
-            parseFloat(
-                waistInput.value
-            );
+            parseFloat(waistInput.value);
 
         const hip =
-            parseFloat(
-                hipInput.value
-            );
+            parseFloat(hipInput.value);
 
         const neck =
-            parseFloat(
-                neckInput.value
-            );
+            parseFloat(neckInput.value);
 
         const backLength =
-            parseFloat(
-                backLengthInput.value
-            );
+            parseFloat(backLengthInput.value);
 
 
         const values = [
@@ -281,11 +270,14 @@ saveMeasurementsButton.addEventListener(
 
 
         const invalidValue =
-            values.some(
-                value =>
+            values.some(function (value) {
+
+                return (
                     !Number.isFinite(value) ||
                     value <= 0
-            );
+                );
+
+            });
 
 
         if (invalidValue) {
@@ -297,7 +289,6 @@ saveMeasurementsButton.addEventListener(
                 "#b91c1c";
 
             return;
-
         }
 
 
@@ -316,15 +307,12 @@ saveMeasurementsButton.addEventListener(
             neck: neck,
 
             backLength: backLength
-
         };
 
 
         localStorage.setItem(
             "smartPolaMeasurements",
-            JSON.stringify(
-                bodyMeasurements
-            )
+            JSON.stringify(bodyMeasurements)
         );
 
 
@@ -335,13 +323,32 @@ saveMeasurementsButton.addEventListener(
 
 
         measurementStatus.textContent =
-            `Ukuran disimpan (${unitText}) — ` +
-            `Bahu: ${shoulder} | ` +
-            `Dada: ${chest} | ` +
-            `Pinggang: ${waist} | ` +
-            `Pinggul: ${hip} | ` +
-            `Leher: ${neck} | ` +
-            `Labuh Tengah Belakang: ${backLength}`;
+            "Ukuran disimpan (" +
+            unitText +
+            ") — " +
+
+            "Bahu: " +
+            shoulder +
+            " | " +
+
+            "Dada: " +
+            chest +
+            " | " +
+
+            "Pinggang: " +
+            waist +
+            " | " +
+
+            "Pinggul: " +
+            hip +
+            " | " +
+
+            "Leher: " +
+            neck +
+            " | " +
+
+            "Labuh Tengah Belakang: " +
+            backLength;
 
 
         measurementStatus.style.color =
@@ -350,14 +357,13 @@ saveMeasurementsButton.addEventListener(
 
         statusText.textContent =
             "Ukuran badan telah disimpan. Kamera sedia digunakan.";
-
     }
 );
 
 
-/* ========================= */
-/* LOAD UKURAN */
-/* ========================= */
+/* =========================
+   LOAD UKURAN
+   ========================= */
 
 function loadMeasurements() {
 
@@ -368,6 +374,7 @@ function loadMeasurements() {
 
 
     if (!savedMeasurements) {
+
         return;
     }
 
@@ -375,44 +382,35 @@ function loadMeasurements() {
     try {
 
         bodyMeasurements =
-            JSON.parse(
-                savedMeasurements
-            );
+            JSON.parse(savedMeasurements);
 
 
         unitSelect.value =
-            bodyMeasurements.unit ||
-            "cm";
+            bodyMeasurements.unit || "cm";
 
 
         shoulderInput.value =
-            bodyMeasurements.shoulder ??
-            "";
+            bodyMeasurements.shoulder ?? "";
 
 
         chestInput.value =
-            bodyMeasurements.chest ??
-            "";
+            bodyMeasurements.chest ?? "";
 
 
         waistInput.value =
-            bodyMeasurements.waist ??
-            "";
+            bodyMeasurements.waist ?? "";
 
 
         hipInput.value =
-            bodyMeasurements.hip ??
-            "";
+            bodyMeasurements.hip ?? "";
 
 
         neckInput.value =
-            bodyMeasurements.neck ??
-            "";
+            bodyMeasurements.neck ?? "";
 
 
         backLengthInput.value =
-            bodyMeasurements.backLength ??
-            "";
+            bodyMeasurements.backLength ?? "";
 
 
         const label =
@@ -421,14 +419,11 @@ function loadMeasurements() {
                 : "in";
 
 
-        unitLabels.forEach(
-            (element) => {
+        unitLabels.forEach(function (element) {
 
-                element.textContent =
-                    label;
+            element.textContent = label;
 
-            }
-        );
+        });
 
 
         measurementStatus.textContent =
@@ -447,19 +442,19 @@ function loadMeasurements() {
         );
 
     }
-
 }
 
 
-/* ========================= */
-/* MULA KAMERA */
-/* ========================= */
+/* =========================
+   MULA KAMERA
+   ========================= */
 
 startButton.addEventListener(
     "click",
-    async () => {
+    async function () {
 
         const measurementsComplete =
+
             bodyMeasurements.shoulder &&
             bodyMeasurements.chest &&
             bodyMeasurements.waist &&
@@ -474,7 +469,6 @@ startButton.addEventListener(
                 "Sila lengkapkan dan simpan semua ukuran badan terlebih dahulu.";
 
             return;
-
         }
 
 
@@ -487,7 +481,6 @@ startButton.addEventListener(
                 "Sila pilih jenis pakaian dan bahagian pola terlebih dahulu.";
 
             return;
-
         }
 
 
@@ -507,17 +500,13 @@ startButton.addEventListener(
                         height: {
                             ideal: 720
                         }
-
                     },
 
                     audio: false
-
                 });
 
 
-            video.srcObject =
-                stream;
-
+            video.srcObject = stream;
 
             await video.play();
 
@@ -526,12 +515,9 @@ startButton.addEventListener(
                 "Kamera aktif — Sila letakkan pola dalam paparan kamera.";
 
 
-            startButton.disabled =
-                true;
+            startButton.disabled = true;
 
-
-            stopButton.disabled =
-                false;
+            stopButton.disabled = false;
 
 
             lineStatus.textContent =
@@ -556,20 +542,18 @@ startButton.addEventListener(
 
             statusText.textContent =
                 "Kamera tidak dapat diakses. Sila benarkan akses kamera.";
-
         }
-
     }
 );
 
 
-/* ========================= */
-/* HENTI KAMERA */
-/* ========================= */
+/* =========================
+   HENTIKAN KAMERA
+   ========================= */
 
 stopButton.addEventListener(
     "click",
-    () => {
+    function () {
 
         stopCamera();
 
@@ -583,13 +567,13 @@ function stopCamera() {
 
         stream
             .getTracks()
-            .forEach(
-                track =>
-                    track.stop()
-            );
+            .forEach(function (track) {
+
+                track.stop();
+
+            });
 
         stream = null;
-
     }
 
 
@@ -600,20 +584,15 @@ function stopCamera() {
         );
 
         animationFrame = null;
-
     }
 
 
-    video.srcObject =
-        null;
+    video.srcObject = null;
 
 
-    startButton.disabled =
-        false;
+    startButton.disabled = false;
 
-
-    stopButton.disabled =
-        true;
+    stopButton.disabled = true;
 
 
     statusText.textContent =
@@ -631,12 +610,19 @@ function stopCamera() {
     formulaStatus.textContent =
         "Belum tersedia";
 
+
+    resultTitle.textContent =
+        "Menunggu semakan pola";
+
+
+    resultMessage.textContent =
+        "Keputusan akan dipaparkan selepas analisis.";
 }
 
 
-/* ========================= */
-/* DETEKSI GARIS POLA */
-/* ========================= */
+/* =========================
+   DETEKSI GARISAN POLA
+   ========================= */
 
 function detectPatternLines() {
 
@@ -651,14 +637,11 @@ function detectPatternLines() {
             );
 
         return;
-
     }
 
 
     const canvas =
-        document.createElement(
-            "canvas"
-        );
+        document.createElement("canvas");
 
 
     const context =
@@ -671,14 +654,11 @@ function detectPatternLines() {
 
 
     const overlayContext =
-        overlayCanvas.getContext(
-            "2d"
-        );
+        overlayCanvas.getContext("2d");
 
 
     canvas.width =
         video.videoWidth;
-
 
     canvas.height =
         video.videoHeight;
@@ -686,7 +666,6 @@ function detectPatternLines() {
 
     overlayCanvas.width =
         video.videoWidth;
-
 
     overlayCanvas.height =
         video.videoHeight;
@@ -793,11 +772,8 @@ function detectPatternLines() {
                     3,
                     3
                 );
-
             }
-
         }
-
     }
 
 
@@ -827,6 +803,13 @@ function detectPatternLines() {
             "Menunggu ukuran";
 
 
+        resultTitle.textContent =
+            "Pola dikesan";
+
+
+        resultMessage.textContent =
+            "Garisan pola telah dikesan. Semakan ukuran akan diteruskan.";
+
     } else {
 
         statusText.textContent =
@@ -835,7 +818,6 @@ function detectPatternLines() {
 
         lineStatus.textContent =
             "Mengesan...";
-
     }
 
 
@@ -843,8 +825,11 @@ function detectPatternLines() {
         requestAnimationFrame(
             detectPatternLines
         );
-
 }
 
+
+/* =========================
+   MULA APLIKASI
+   ========================= */
 
 loadMeasurements();
