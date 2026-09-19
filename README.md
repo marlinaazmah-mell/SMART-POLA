@@ -1,2 +1,2 @@
 # SMART-POLA
-Aplikasi telefon pintar untuk semakan pola pakaian secara kendiri bagi pelatih TVET Fesyen.
+AI Pattern Measurement Prototype for TVET Fashion Training
