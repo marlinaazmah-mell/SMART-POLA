@@ -33,12 +33,6 @@ const patternMeasurement =
 const formulaStatus =
     document.getElementById("formulaStatus");
 
-
-
-/*
-    TETAPAN POLA
-*/
-
 const garmentType =
     document.getElementById("garmentType");
 
@@ -46,45 +40,27 @@ const patternPart =
     document.getElementById("patternPart");
 
 const patternSelectionStatus =
-    document.getElementById(
-        "patternSelectionStatus"
-    );
+    document.getElementById("patternSelectionStatus");
 
-
-
-/*
-    Data ukuran badan
-*/
 
 let bodyMeasurements = {
-
     unit: "cm",
-
     shoulder: null,
-
     chest: null,
-
     waist: null,
-
     hip: null,
-
     neck: null,
-
     backLength: null
-
 };
 
 
-
 let stream = null;
-
 let animationFrame = null;
 
 
-
-/*
-    SENARAI BAHAGIAN POLA
-*/
+/* ========================= */
+/* PILIHAN BAHAGIAN POLA */
+/* ========================= */
 
 const patternOptions = {
 
@@ -115,120 +91,114 @@ const patternOptions = {
 };
 
 
+/* ========================= */
+/* JENIS PAKAIAN */
+/* ========================= */
 
-/*
-    PILIH JENIS PAKAIAN
-*/
+garmentType.addEventListener(
+    "change",
+    () => {
 
-if (garmentType) {
-
-    garmentType.addEventListener(
-        "change",
-        () => {
-
-            const selectedType =
-                garmentType.value;
+        const selectedType =
+            garmentType.value;
 
 
-            patternPart.innerHTML =
-                `
-                <option value="">
-                    -- Pilih bahagian pola --
-                </option>
-                `;
+        patternPart.innerHTML = "";
 
 
-            if (
-                !patternOptions[selectedType]
-            ) {
+        const defaultOption =
+            document.createElement("option");
 
-                patternSelectionStatus.textContent =
-                    "";
+        defaultOption.value = "";
 
-                return;
+        defaultOption.textContent =
+            "-- Pilih bahagian pola --";
 
-            }
-
-
-            patternOptions[selectedType]
-                .forEach(
-                    (part) => {
-
-                        const option =
-                            document.createElement(
-                                "option"
-                            );
+        patternPart.appendChild(
+            defaultOption
+        );
 
 
-                        option.value =
-                            part;
+        if (
+            !patternOptions[selectedType]
+        ) {
+
+            patternSelectionStatus.textContent =
+                "";
+
+            return;
+
+        }
 
 
-                        option.textContent =
-                            part;
+        patternOptions[selectedType]
+            .forEach(
+                (part) => {
 
-
-                        patternPart.appendChild(
-                            option
+                    const option =
+                        document.createElement(
+                            "option"
                         );
 
-                    }
-                );
+                    option.value =
+                        part;
+
+                    option.textContent =
+                        part;
+
+                    patternPart.appendChild(
+                        option
+                    );
+
+                }
+            );
+
+
+        patternSelectionStatus.textContent =
+            "Sila pilih bahagian pola.";
+
+        patternSelectionStatus.style.color =
+            "#111827";
+
+    }
+);
+
+
+/* ========================= */
+/* BAHAGIAN POLA */
+/* ========================= */
+
+patternPart.addEventListener(
+    "change",
+    () => {
+
+        if (
+            garmentType.value &&
+            patternPart.value
+        ) {
+
+            const garmentName =
+                garmentType.options[
+                    garmentType.selectedIndex
+                ].text;
 
 
             patternSelectionStatus.textContent =
-                "Jenis pakaian dipilih. Sila pilih bahagian pola.";
+                `Pola dipilih: ${garmentName} — ${patternPart.value}`;
+
 
             patternSelectionStatus.style.color =
-                "#111827";
+                "#166534";
 
         }
-    );
 
-}
-
-
-
-/*
-    PILIH BAHAGIAN POLA
-*/
-
-if (patternPart) {
-
-    patternPart.addEventListener(
-        "change",
-        () => {
-
-            if (
-                garmentType.value &&
-                patternPart.value
-            ) {
-
-                const garmentName =
-                    garmentType.options[
-                        garmentType.selectedIndex
-                    ].text;
+    }
+);
 
 
-                patternSelectionStatus.textContent =
-                    `Pola dipilih: ${garmentName} — ${patternPart.value}`;
-
-
-                patternSelectionStatus.style.color =
-                    "#166534";
-
-            }
-
-        }
-    );
-
-}
-
-
-
-/*
-    TUKAR UNIT
-*/
+/* ========================= */
+/* UNIT */
+/* ========================= */
 
 unitSelect.addEventListener(
     "change",
@@ -257,10 +227,9 @@ unitSelect.addEventListener(
 );
 
 
-
-/*
-    SIMPAN UKURAN BADAN
-*/
+/* ========================= */
+/* SIMPAN UKURAN */
+/* ========================= */
 
 saveMeasurementsButton.addEventListener(
     "click",
@@ -275,30 +244,25 @@ saveMeasurementsButton.addEventListener(
                 shoulderInput.value
             );
 
-
         const chest =
             parseFloat(
                 chestInput.value
             );
-
 
         const waist =
             parseFloat(
                 waistInput.value
             );
 
-
         const hip =
             parseFloat(
                 hipInput.value
             );
 
-
         const neck =
             parseFloat(
                 neckInput.value
             );
-
 
         const backLength =
             parseFloat(
@@ -307,14 +271,12 @@ saveMeasurementsButton.addEventListener(
 
 
         const values = [
-
             shoulder,
             chest,
             waist,
             hip,
             neck,
             backLength
-
         ];
 
 
@@ -393,10 +355,9 @@ saveMeasurementsButton.addEventListener(
 );
 
 
-
-/*
-    MUAT UKURAN YANG DISIMPAN
-*/
+/* ========================= */
+/* LOAD UKURAN */
+/* ========================= */
 
 function loadMeasurements() {
 
@@ -407,9 +368,7 @@ function loadMeasurements() {
 
 
     if (!savedMeasurements) {
-
         return;
-
     }
 
 
@@ -492,17 +451,15 @@ function loadMeasurements() {
 }
 
 
-
-/*
-    MULA KAMERA
-*/
+/* ========================= */
+/* MULA KAMERA */
+/* ========================= */
 
 startButton.addEventListener(
     "click",
     async () => {
 
         const measurementsComplete =
-
             bodyMeasurements.shoulder &&
             bodyMeasurements.chest &&
             bodyMeasurements.waist &&
@@ -591,10 +548,8 @@ startButton.addEventListener(
 
             detectPatternLines();
 
-        }
 
-
-        catch (error) {
+        } catch (error) {
 
             console.error(error);
 
@@ -608,10 +563,9 @@ startButton.addEventListener(
 );
 
 
-
-/*
-    HENTI KAMERA
-*/
+/* ========================= */
+/* HENTI KAMERA */
+/* ========================= */
 
 stopButton.addEventListener(
     "click",
@@ -621,7 +575,6 @@ stopButton.addEventListener(
 
     }
 );
-
 
 
 function stopCamera() {
@@ -635,7 +588,6 @@ function stopCamera() {
                     track.stop()
             );
 
-
         stream = null;
 
     }
@@ -646,7 +598,6 @@ function stopCamera() {
         cancelAnimationFrame(
             animationFrame
         );
-
 
         animationFrame = null;
 
@@ -683,10 +634,9 @@ function stopCamera() {
 }
 
 
-
-/*
-    KESAN GARISAN POLA
-*/
+/* ========================= */
+/* DETEKSI GARIS POLA */
+/* ========================= */
 
 function detectPatternLines() {
 
@@ -876,9 +826,8 @@ function detectPatternLines() {
         patternMeasurement.textContent =
             "Menunggu ukuran";
 
-    }
 
-    else {
+    } else {
 
         statusText.textContent =
             "Mengesan garisan pola...";
@@ -897,10 +846,5 @@ function detectPatternLines() {
 
 }
 
-
-
-/*
-    JALANKAN SISTEM
-*/
 
 loadMeasurements();
