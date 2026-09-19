@@ -6,9 +6,17 @@ const stopButton = document.getElementById("stopCamera");
 
 const statusText = document.getElementById("status");
 
+const unitSelect = document.getElementById("unit");
+
 const shoulderInput = document.getElementById("shoulder");
-const neckInput = document.getElementById("neck");
 const chestInput = document.getElementById("chest");
+const waistInput = document.getElementById("waist");
+const hipInput = document.getElementById("hip");
+const neckInput = document.getElementById("neck");
+const backLengthInput = document.getElementById("backLength");
+
+const unitLabels =
+    document.querySelectorAll(".unit-label");
 
 const saveMeasurementsButton =
     document.getElementById("saveMeasurements");
@@ -29,91 +37,213 @@ const formulaStatus =
 let stream = null;
 let animationFrame = null;
 
+
+/*
+    Data ukuran badan
+*/
+
 let bodyMeasurements = {
+    unit: "cm",
     shoulder: null,
+    chest: null,
+    waist: null,
+    hip: null,
     neck: null,
-    chest: null
+    backLength: null
 };
 
 
-/* =========================
-   SIMPAN UKURAN BADAN
-========================= */
+/*
+    Tukar label unit
+*/
+
+unitSelect.addEventListener("change", () => {
+
+    const selectedUnit = unitSelect.value;
+
+    const label =
+        selectedUnit === "cm"
+            ? "cm"
+            : "in";
+
+    unitLabels.forEach((element) => {
+        element.textContent = label;
+    });
+
+});
+
+
+/*
+    Simpan ukuran badan
+*/
 
 saveMeasurementsButton.addEventListener("click", () => {
 
-    const shoulder = parseFloat(shoulderInput.value);
-    const neck = parseFloat(neckInput.value);
-    const chest = parseFloat(chestInput.value);
+    const unit = unitSelect.value;
 
-    if (
-        !Number.isFinite(shoulder) ||
-        !Number.isFinite(neck) ||
-        !Number.isFinite(chest) ||
-        shoulder <= 0 ||
-        neck <= 0 ||
-        chest <= 0
-    ) {
+    const shoulder =
+        parseFloat(shoulderInput.value);
+
+    const chest =
+        parseFloat(chestInput.value);
+
+    const waist =
+        parseFloat(waistInput.value);
+
+    const hip =
+        parseFloat(hipInput.value);
+
+    const neck =
+        parseFloat(neckInput.value);
+
+    const backLength =
+        parseFloat(backLengthInput.value);
+
+
+    const values = [
+        shoulder,
+        chest,
+        waist,
+        hip,
+        neck,
+        backLength
+    ];
+
+
+    const invalidValue =
+        values.some(
+            value =>
+                !Number.isFinite(value) ||
+                value <= 0
+        );
+
+
+    if (invalidValue) {
+
         measurementStatus.textContent =
-            "Sila masukkan semua ukuran dengan nilai yang betul.";
+            "Sila lengkapkan semua 6 ukuran dengan nilai yang betul.";
 
-        measurementStatus.style.color = "#b91c1c";
+        measurementStatus.style.color =
+            "#b91c1c";
 
         return;
     }
 
+
     bodyMeasurements = {
+
+        unit: unit,
+
         shoulder: shoulder,
+
+        chest: chest,
+
+        waist: waist,
+
+        hip: hip,
+
         neck: neck,
-        chest: chest
+
+        backLength: backLength
+
     };
+
 
     localStorage.setItem(
         "smartPolaMeasurements",
         JSON.stringify(bodyMeasurements)
     );
 
-    measurementStatus.textContent =
-        `Ukuran disimpan — Bahu: ${shoulder} cm | Leher: ${neck} cm | Dada: ${chest} cm`;
 
-    measurementStatus.style.color = "#166534";
+    const unitText =
+        unit === "cm"
+            ? "cm"
+            : "in";
+
+
+    measurementStatus.textContent =
+        `Ukuran disimpan (${unitText}) — ` +
+        `Bahu: ${shoulder} | ` +
+        `Dada: ${chest} | ` +
+        `Pinggang: ${waist} | ` +
+        `Pinggul: ${hip} | ` +
+        `Leher: ${neck} | ` +
+        `Labuh Tengah Belakang: ${backLength}`;
+
+
+    measurementStatus.style.color =
+        "#166534";
+
 
     statusText.textContent =
         "Ukuran badan telah disimpan. Kamera sedia digunakan.";
+
 });
 
 
-/* =========================
-   MUAT SEMULA UKURAN
-========================= */
+/*
+    Muat ukuran yang pernah disimpan
+*/
 
 function loadMeasurements() {
 
     const savedMeasurements =
-        localStorage.getItem("smartPolaMeasurements");
+        localStorage.getItem(
+            "smartPolaMeasurements"
+        );
+
 
     if (!savedMeasurements) {
         return;
     }
+
 
     try {
 
         bodyMeasurements =
             JSON.parse(savedMeasurements);
 
+
+        unitSelect.value =
+            bodyMeasurements.unit || "cm";
+
+
         shoulderInput.value =
             bodyMeasurements.shoulder ?? "";
-
-        neckInput.value =
-            bodyMeasurements.neck ?? "";
 
         chestInput.value =
             bodyMeasurements.chest ?? "";
 
+        waistInput.value =
+            bodyMeasurements.waist ?? "";
+
+        hipInput.value =
+            bodyMeasurements.hip ?? "";
+
+        neckInput.value =
+            bodyMeasurements.neck ?? "";
+
+        backLengthInput.value =
+            bodyMeasurements.backLength ?? "";
+
+
+        const label =
+            bodyMeasurements.unit === "cm"
+                ? "cm"
+                : "in";
+
+
+        unitLabels.forEach((element) => {
+            element.textContent = label;
+        });
+
+
         measurementStatus.textContent =
             "Ukuran badan sebelumnya telah dimuatkan.";
 
-        measurementStatus.style.color = "#166534";
+        measurementStatus.style.color =
+            "#166534";
+
 
     } catch (error) {
 
@@ -123,86 +253,121 @@ function loadMeasurements() {
         );
 
     }
+
 }
 
 
-/* =========================
-   MULA KAMERA
-========================= */
+/*
+    Mula kamera
+*/
 
-startButton.addEventListener("click", async () => {
+startButton.addEventListener(
+    "click",
+    async () => {
 
-    if (
-        !bodyMeasurements.shoulder ||
-        !bodyMeasurements.neck ||
-        !bodyMeasurements.chest
-    ) {
+        const measurementsComplete =
+            bodyMeasurements.shoulder &&
+            bodyMeasurements.chest &&
+            bodyMeasurements.waist &&
+            bodyMeasurements.hip &&
+            bodyMeasurements.neck &&
+            bodyMeasurements.backLength;
 
-        statusText.textContent =
-            "Sila simpan ukuran badan terlebih dahulu.";
 
-        return;
-    }
+        if (!measurementsComplete) {
 
-    try {
+            statusText.textContent =
+                "Sila lengkapkan dan simpan semua ukuran badan terlebih dahulu.";
 
-        stream =
-            await navigator.mediaDevices.getUserMedia({
+            return;
+        }
 
-                video: {
-                    facingMode: "environment",
-                    width: {
-                        ideal: 1280
+
+        try {
+
+            stream =
+                await navigator.mediaDevices.getUserMedia({
+
+                    video: {
+
+                        facingMode: "environment",
+
+                        width: {
+                            ideal: 1280
+                        },
+
+                        height: {
+                            ideal: 720
+                        }
+
                     },
-                    height: {
-                        ideal: 720
-                    }
-                },
 
-                audio: false
-            });
+                    audio: false
 
-        video.srcObject = stream;
+                });
 
-        await video.play();
 
-        statusText.textContent =
-            "Kamera aktif — Sila letakkan pola dalam paparan kamera.";
+            video.srcObject =
+                stream;
 
-        startButton.disabled = true;
-        stopButton.disabled = false;
 
-        lineStatus.textContent =
-            "Mengesan...";
+            await video.play();
 
-        patternMeasurement.textContent =
-            "Menganalisis...";
 
-        formulaStatus.textContent =
-            "Menunggu ukuran pola";
+            statusText.textContent =
+                "Kamera aktif — Sila letakkan pola dalam paparan kamera.";
 
-        detectPatternLines();
 
-    } catch (error) {
+            startButton.disabled =
+                true;
 
-        console.error(error);
+            stopButton.disabled =
+                false;
 
-        statusText.textContent =
-            "Kamera tidak dapat diakses. Sila benarkan akses kamera.";
+
+            lineStatus.textContent =
+                "Mengesan...";
+
+
+            patternMeasurement.textContent =
+                "Menganalisis...";
+
+
+            formulaStatus.textContent =
+                "Menunggu ukuran pola";
+
+
+            detectPatternLines();
+
+        }
+
+
+        catch (error) {
+
+            console.error(error);
+
+
+            statusText.textContent =
+                "Kamera tidak dapat diakses. Sila benarkan akses kamera.";
+
+        }
 
     }
-});
+);
 
 
-/* =========================
-   HENTI KAMERA
-========================= */
+/*
+    Henti kamera
+*/
 
-stopButton.addEventListener("click", () => {
+stopButton.addEventListener(
+    "click",
+    () => {
 
-    stopCamera();
+        stopCamera();
 
-});
+    }
+);
 
 
 function stopCamera() {
@@ -211,10 +376,14 @@ function stopCamera() {
 
         stream
             .getTracks()
-            .forEach(track => track.stop());
+            .forEach(
+                track =>
+                    track.stop()
+            );
 
         stream = null;
     }
+
 
     if (animationFrame) {
 
@@ -225,28 +394,39 @@ function stopCamera() {
         animationFrame = null;
     }
 
-    video.srcObject = null;
 
-    startButton.disabled = false;
-    stopButton.disabled = true;
+    video.srcObject =
+        null;
+
+
+    startButton.disabled =
+        false;
+
+    stopButton.disabled =
+        true;
+
 
     statusText.textContent =
         "Kamera belum diaktifkan.";
 
+
     lineStatus.textContent =
         "Belum dianalisis";
+
 
     patternMeasurement.textContent =
         "Menunggu imbasan";
 
+
     formulaStatus.textContent =
         "Belum tersedia";
+
 }
 
 
-/* =========================
-   KESAN GARISAN POLA
-========================= */
+/*
+    Kesan garisan pola
+*/
 
 function detectPatternLines() {
 
@@ -263,16 +443,22 @@ function detectPatternLines() {
         return;
     }
 
+
     const context =
-        canvas.getContext("2d", {
-            willReadFrequently: true
-        });
+        canvas.getContext(
+            "2d",
+            {
+                willReadFrequently: true
+            }
+        );
+
 
     canvas.width =
         video.videoWidth;
 
     canvas.height =
         video.videoHeight;
+
 
     context.drawImage(
         video,
@@ -282,6 +468,7 @@ function detectPatternLines() {
         canvas.height
     );
 
+
     const image =
         context.getImageData(
             0,
@@ -290,10 +477,13 @@ function detectPatternLines() {
             canvas.height
         );
 
+
     const data =
         image.data;
 
+
     let edgePixels = 0;
+
 
     for (
         let y = 1;
@@ -310,8 +500,10 @@ function detectPatternLines() {
             const currentIndex =
                 (y * canvas.width + x) * 4;
 
+
             const rightIndex =
                 (y * canvas.width + (x + 1)) * 4;
+
 
             const currentBrightness =
                 (
@@ -320,6 +512,7 @@ function detectPatternLines() {
                     data[currentIndex + 2]
                 ) / 3;
 
+
             const rightBrightness =
                 (
                     data[rightIndex] +
@@ -327,24 +520,36 @@ function detectPatternLines() {
                     data[rightIndex + 2]
                 ) / 3;
 
+
             const difference =
                 Math.abs(
                     currentBrightness -
                     rightBrightness
                 );
 
+
             if (difference > 45) {
+
                 edgePixels++;
+
             }
+
         }
+
     }
+
 
     const detectionLevel =
         edgePixels /
-        ((canvas.width * canvas.height) / 16);
+        (
+            (canvas.width *
+            canvas.height) / 16
+        );
 
 
-    if (detectionLevel > 0.015) {
+    if (
+        detectionLevel > 0.015
+    ) {
 
         statusText.textContent =
             "Garisan pola dikesan.";
@@ -352,13 +557,16 @@ function detectPatternLines() {
         lineStatus.textContent =
             "Dikesan";
 
-    } else {
+    }
+
+    else {
 
         statusText.textContent =
             "Mengesan garisan pola...";
 
         lineStatus.textContent =
             "Mengesan...";
+
     }
 
 
@@ -366,11 +574,12 @@ function detectPatternLines() {
         requestAnimationFrame(
             detectPatternLines
         );
+
 }
 
 
-/* =========================
-   MULAKAN SISTEM
-========================= */
+/*
+    Jalankan sistem
+*/
 
 loadMeasurements();
