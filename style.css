@@ -1,4 +1,100 @@
-/* SMART-POLA - Tetapan Pola */
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #f4f5f7;
+    color: #222;
+}
+
+.header {
+    background: #111827;
+    color: white;
+    padding: 24px;
+}
+
+.header h1 {
+    margin: 0;
+    font-size: 30px;
+}
+
+.header p {
+    margin: 6px 0 0;
+    opacity: 0.8;
+}
+
+.container {
+    width: min(1100px, 92%);
+    margin: 30px auto;
+}
+
+.card {
+    background: white;
+    padding: 24px;
+    margin-bottom: 22px;
+    border-radius: 14px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+.card h2 {
+    margin-top: 0;
+}
+
+.description {
+    color: #666;
+}
+
+.measurement-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 18px;
+    margin: 20px 0;
+}
+
+.measurement label {
+    display: block;
+    font-weight: bold;
+    margin-bottom: 8px;
+}
+
+.input-unit {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.input-unit input {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    font-size: 16px;
+}
+
+.input-unit span {
+    font-weight: bold;
+}
+
+.unit-selection {
+    margin-bottom: 18px;
+}
+
+.unit-selection label {
+    display: block;
+    font-weight: bold;
+    margin-bottom: 8px;
+}
+
+.unit-selection select {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    font-size: 16px;
+    background: white;
+}
 
 .pattern-selection {
     display: grid;
@@ -20,7 +116,7 @@
     border: 1px solid #ccc;
     border-radius: 8px;
     font-size: 16px;
-    background: white;
+    background-color: white;
     color: #222;
     cursor: pointer;
 }
@@ -30,10 +126,125 @@
     border-color: #111827;
 }
 
+.primary-button,
+.secondary-button {
+    border: none;
+    padding: 12px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 15px;
+}
+
+.primary-button {
+    background: #111827;
+    color: white;
+}
+
+.secondary-button {
+    background: #e5e7eb;
+    color: #111827;
+}
+
+button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.camera-container {
+    position: relative;
+    width: 100%;
+    background: #111;
+    border-radius: 12px;
+    overflow: hidden;
+    margin: 20px 0;
+}
+
+#camera {
+    display: block;
+    width: 100%;
+    min-height: 400px;
+    object-fit: cover;
+}
+
+#overlayCanvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+.camera-controls {
+    display: flex;
+    gap: 10px;
+}
+
+.status-box {
+    margin-top: 18px;
+    padding: 14px;
+    background: #f3f4f6;
+    border-radius: 8px;
+}
+
+.status {
+    margin-top: 12px;
+    font-weight: bold;
+}
+
+.analysis-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
+}
+
+.analysis-item {
+    padding: 18px;
+    background: #f3f4f6;
+    border-radius: 10px;
+}
+
+.analysis-item span {
+    display: block;
+    color: #666;
+    margin-bottom: 8px;
+}
+
+.analysis-item strong {
+    font-size: 18px;
+}
+
+.result-box {
+    padding: 25px;
+    text-align: center;
+    background: #f3f4f6;
+    border-radius: 10px;
+}
+
+.passport-placeholder {
+    padding: 20px;
+    border: 2px dashed #ccc;
+    border-radius: 10px;
+    text-align: center;
+    color: #777;
+}
+
+footer {
+    text-align: center;
+    padding: 30px;
+    color: #777;
+}
+
 @media (max-width: 750px) {
 
+    .measurement-grid,
+    .analysis-grid,
     .pattern-selection {
         grid-template-columns: 1fr;
+    }
+
+    #camera {
+        min-height: 280px;
     }
 
 }
