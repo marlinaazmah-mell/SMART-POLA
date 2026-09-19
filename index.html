@@ -1,99 +1,257 @@
 <!DOCTYPE html>
+
 <html lang="ms">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SMART-POLA</title>
-    <link rel="stylesheet" href="style.css">
+
+```
+<title>SMART-POLA</title>
+
+<link rel="stylesheet" href="style.css">
+```
+
 </head>
 
 <body>
 
-    <h1>SMART-POLA</h1>
-    <p>AI Pattern Measurement Assistant</p>
-
-    <hr>
-
-    <h2>1. INPUT UKURAN BADAN</h2>
-
-    <label>Pinggang (cm)</label>
-    <input type="number" id="pinggang" placeholder="Contoh: 76">
-
-    <label>Punggung (cm)</label>
-    <input type="number" id="punggung" placeholder="Contoh: 100">
-
-    <label>Panjang Pola (cm)</label>
-    <input type="number" id="panjang" placeholder="Contoh: 40">
-
-    <button onclick="semakUkuran()">SEMAK POLA</button>
-
-    <hr>
-
-    <h2>2. FORMULA POLA</h2>
-
-    <div id="formula">
-        Formula akan dipaparkan selepas ukuran dimasukkan.
+```
+<header class="header">
+    <div>
+        <h1>SMART-POLA</h1>
+        <p>AI-Powered Garment Pattern Checking System</p>
     </div>
+</header>
 
-    <hr>
 
-    <h2>3. KEPUTUSAN</h2>
+<main class="container">
 
-    <div id="result">
-        Sila masukkan ukuran.
-    </div>
+    <!-- DATA UKURAN BADAN -->
+    <section class="card">
 
-    <hr>
+        <h2>1. Data Ukuran Badan</h2>
 
-<h2>4. SEMAK UKURAN POLA</h2>
+        <p class="description">
+            Masukkan ukuran sebenar badan sebelum proses semakan pola.
+        </p>
 
-<label>Ukuran Pola Pinggang (cm)</label>
-<input type="number" id="polaPinggang" placeholder="Contoh: 19">
+        <div class="measurement-grid">
 
-<label>Ukuran Pola Punggung (cm)</label>
-<input type="number" id="polaPunggung" placeholder="Contoh: 25">
+            <div class="measurement">
+                <label for="shoulder">
+                    Bahu
+                </label>
 
-<button onclick="semakPola()">SEMAK UKURAN POLA</button>
+                <div class="input-unit">
+                    <input
+                        type="number"
+                        id="shoulder"
+                        min="0"
+                        step="0.1"
+                        placeholder="Contoh: 38"
+                    >
 
-<div id="semakan">
-    Masukkan ukuran pola untuk semakan.
-</div>
+                    <span>cm</span>
+                </div>
+            </div>
 
-<script src="semakan.js"></script>
-    <hr>
 
-<h2>5. IMBAS POLA</h2>
+            <div class="measurement">
+                <label for="neck">
+                    Keliling Leher
+                </label>
 
-<input
-    type="file"
-    id="gambarPola"
-    accept="image/*"
-    capture="environment"
-    onchange="paparGambar(event)"
-    style="display:none;"
->
+                <div class="input-unit">
+                    <input
+                        type="number"
+                        id="neck"
+                        min="0"
+                        step="0.1"
+                        placeholder="Contoh: 36"
+                    >
 
-<button onclick="bukaKamera()">📷 BUKA KAMERA / PILIH GAMBAR</button>
-    
-    <button onclick="kesanGarisan()">🔎 KESAN GARISAN POLA</button>
+                    <span>cm</span>
+                </div>
+            </div>
 
-<p id="statusKamera">Belum ada gambar.</p>
 
-<img
-    id="previewPola"
-    style="display:none; width:100%; margin-top:15px; border-radius:10px;"
-    alt="Pratonton pola"
-    <canvas
-    id="canvasPola"
-    style="display:none; width:100%; margin-top:15px; border-radius:10px;">
-</canvas>
->
-<script src="semakan.js"></script>
-<script src="script.js"></script>
-<script src="kamera.js"></script>
-<script src="pengesan.js"></script>
+            <div class="measurement">
+                <label for="chest">
+                    Keliling Dada
+                </label>
 
-<script async src="https://docs.opencv.org/4.x/opencv.js"></script>
+                <div class="input-unit">
+                    <input
+                        type="number"
+                        id="chest"
+                        min="0"
+                        step="0.1"
+                        placeholder="Contoh: 92"
+                    >
+
+                    <span>cm</span>
+                </div>
+            </div>
+
+        </div>
+
+        <button
+            type="button"
+            id="saveMeasurements"
+            class="primary-button"
+        >
+            Simpan Ukuran
+        </button>
+
+        <p id="measurementStatus" class="status"></p>
+
+    </section>
+
+
+    <!-- IMBAS POLA -->
+    <section class="card">
+
+        <h2>2. Imbas Pola</h2>
+
+        <p class="description">
+            Gunakan kamera laptop untuk mengimbas pola pakaian.
+        </p>
+
+
+        <div class="camera-container">
+
+            <video
+                id="camera"
+                autoplay
+                playsinline
+                muted
+            ></video>
+
+            <canvas
+                id="canvas"
+                class="hidden-canvas"
+            ></canvas>
+
+        </div>
+
+
+        <div class="camera-controls">
+
+            <button
+                type="button"
+                id="startCamera"
+                class="primary-button"
+            >
+                Mula Imbas
+            </button>
+
+
+            <button
+                type="button"
+                id="stopCamera"
+                class="secondary-button"
+                disabled
+            >
+                Henti Kamera
+            </button>
+
+        </div>
+
+
+        <div class="status-box">
+
+            <strong>Status:</strong>
+
+            <span id="status">
+                Kamera belum diaktifkan.
+            </span>
+
+        </div>
+
+    </section>
+
+
+    <!-- ANALISIS -->
+    <section class="card">
+
+        <h2>3. Analisis Pola</h2>
+
+        <div class="analysis-grid">
+
+            <div class="analysis-item">
+                <span>Garisan pola</span>
+                <strong id="lineStatus">
+                    Belum dianalisis
+                </strong>
+            </div>
+
+
+            <div class="analysis-item">
+                <span>Ukuran pola</span>
+                <strong id="patternMeasurement">
+                    Menunggu imbasan
+                </strong>
+            </div>
+
+
+            <div class="analysis-item">
+                <span>Semakan formula</span>
+                <strong id="formulaStatus">
+                    Belum tersedia
+                </strong>
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- KEPUTUSAN -->
+    <section class="card">
+
+        <h2>4. Keputusan</h2>
+
+        <div
+            id="resultBox"
+            class="result-box"
+        >
+            <span>Keputusan akan dipaparkan selepas analisis.</span>
+        </div>
+
+    </section>
+
+
+    <!-- PASSPORT -->
+    <section class="card">
+
+        <h2>5. SMART-POLA Passport</h2>
+
+        <p class="description">
+            Rekod digital pencapaian dan semakan pola pelatih.
+        </p>
+
+        <div class="passport-placeholder">
+
+            <p>
+                Rekod akan tersedia selepas sistem semakan pola
+                dibangunkan.
+            </p>
+
+        </div>
+
+    </section>
+
+</main>
+
+
+<footer>
+    <p>SMART-POLA © 2026</p>
+</footer>
+
+
+<script src="app.js"></script>
+```
 
 </body>
 </html>
+
