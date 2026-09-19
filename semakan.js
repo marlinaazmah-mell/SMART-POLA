@@ -11,22 +11,57 @@ function semakPola() {
 
     const toleransi = 0.5;
 
-    const pinggangBetul =
-        Math.abs(polaPinggang - sasaranPinggang) <= toleransi;
+    const bezaPinggang = polaPinggang - sasaranPinggang;
+    const bezaPunggung = polaPunggung - sasaranPunggung;
 
-    const punggungBetul =
-        Math.abs(polaPunggung - sasaranPunggung) <= toleransi;
+    const pinggangBetul = Math.abs(bezaPinggang) <= toleransi;
+    const punggungBetul = Math.abs(bezaPunggung) <= toleransi;
 
-    document.getElementById("semakan").innerHTML = `
+    let keputusan = "";
 
-        <h3>${pinggangBetul ? "🟢 PINGGANG BETUL" : "🔴 PINGGANG SALAH"}</h3>
+    if (pinggangBetul && punggungBetul) {
 
-        Sasaran: ${sasaranPinggang.toFixed(1)} cm<br>
-        Ukuran pola: ${polaPinggang.toFixed(1)} cm<br><br>
+        keputusan = `
+            <div class="lulus">
+                🟢 <strong>LULUS</strong><br><br>
+                Kedua-dua ukuran pola berada dalam toleransi.
+            </div>
+        `;
 
-        <h3>${punggungBetul ? "🟢 PUNGGUNG BETUL" : "🔴 PUNGGUNG SALAH"}</h3>
+    } else {
 
-        Sasaran: ${sasaranPunggung.toFixed(1)} cm<br>
-        Ukuran pola: ${polaPunggung.toFixed(1)} cm
-    `;
+        keputusan = `
+            <div class="gagal">
+                🔴 <strong>PERLU PEMBETULAN</strong><br><br>
+
+                ${pinggangBetul
+                    ? "🟢 Pinggang: BETUL"
+                    : `🔴 Pinggang: SALAH<br>
+                       Sasaran: ${sasaranPinggang.toFixed(1)} cm<br>
+                       Ukuran pola: ${polaPinggang.toFixed(1)} cm<br>
+                       Beza: ${Math.abs(bezaPinggang).toFixed(1)} cm<br>
+                       ${bezaPinggang > 0
+                           ? "➡️ Kurangkan ukuran pola."
+                           : "➡️ Tambahkan ukuran pola."
+                       }`
+                }
+
+                <br><br>
+
+                ${punggungBetul
+                    ? "🟢 Punggung: BETUL"
+                    : `🔴 Punggung: SALAH<br>
+                       Sasaran: ${sasaranPunggung.toFixed(1)} cm<br>
+                       Ukuran pola: ${polaPunggung.toFixed(1)} cm<br>
+                       Beza: ${Math.abs(bezaPunggung).toFixed(1)} cm<br>
+                       ${bezaPunggung > 0
+                           ? "➡️ Kurangkan ukuran pola."
+                           : "➡️ Tambahkan ukuran pola."
+                       }`
+                }
+            </div>
+        `;
+    }
+
+    document.getElementById("semakan").innerHTML = keputusan;
 }
