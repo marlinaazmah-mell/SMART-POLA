@@ -1,48 +1,37 @@
 function semakUkuran() {
 
-    const pinggang = Number(document.getElementById("pinggang").value);
-    const punggung = Number(document.getElementById("punggung").value);
-    const panjang = Number(document.getElementById("panjang").value);
+    const pinggang = parseFloat(document.getElementById("pinggang").value);
+    const punggung = parseFloat(document.getElementById("punggung").value);
+    const panjang = parseFloat(document.getElementById("panjang").value);
 
-    if (!pinggang || !punggung || !panjang) {
+    const formula = document.getElementById("formula");
+    const result = document.getElementById("result");
 
-        document.getElementById("result").innerHTML =
-            "⚠️ Sila lengkapkan semua ukuran.";
-
+    if (isNaN(pinggang) || isNaN(punggung) || isNaN(panjang)) {
+        formula.innerHTML = "⚠️ Lengkapkan semua ukuran dahulu.";
+        result.innerHTML = "";
         return;
     }
 
-    // FORMULA ASAS POLA
     const sukuPinggang = pinggang / 4;
     const sukuPunggung = punggung / 4;
 
-    document.getElementById("formula").innerHTML =
+    formula.innerHTML = `
+        <strong>Formula yang digunakan:</strong><br><br>
+        ¼ Pinggang = ${pinggang} ÷ 4 = 
+        <strong>${sukuPinggang.toFixed(1)} cm</strong><br><br>
 
-        "¼ Pinggang = " +
-        sukuPinggang.toFixed(1) +
-        " cm<br><br>" +
+        ¼ Punggung = ${punggung} ÷ 4 = 
+        <strong>${sukuPunggung.toFixed(1)} cm</strong><br><br>
 
-        "¼ Punggung = " +
-        sukuPunggung.toFixed(1) +
-        " cm<br><br>" +
+        Panjang Pola = 
+        <strong>${panjang.toFixed(1)} cm</strong>
+    `;
 
-        "Panjang Pola = " +
-        panjang.toFixed(1) +
-        " cm";
-
-    document.getElementById("result").innerHTML =
-
-        "🟢 <strong>POLA BERJAYA DIKIRA</strong><br><br>" +
-
-        "Lebar Pinggang: " +
-        sukuPinggang.toFixed(1) +
-        " cm<br>" +
-
-        "Lebar Punggung: " +
-        sukuPunggung.toFixed(1) +
-        " cm<br>" +
-
-        "Panjang Pola: " +
-        panjang.toFixed(1) +
-        " cm";
+    result.innerHTML = `
+        🟢 <strong>POLA BERJAYA DIKIRA</strong><br><br>
+        Lebar Pinggang: ${sukuPinggang.toFixed(1)} cm<br>
+        Lebar Punggung: ${sukuPunggung.toFixed(1)} cm<br>
+        Panjang Pola: ${panjang.toFixed(1)} cm
+    `;
 }
