@@ -1,5 +1,6 @@
 const video = document.getElementById("camera");
-const canvas = document.getElementById("canvas");
+const canvas = document.createElement("canvas");
+const overlayCanvas = document.getElementById("overlayCanvas");
 
 const startButton = document.getElementById("startCamera");
 const stopButton = document.getElementById("stopCamera");
