@@ -1,35 +1,22 @@
-body {
-    font-family: Arial, sans-serif;
-    max-width: 700px;
-    margin: 40px auto;
-    padding: 20px;
-    background: #f7f3f8;
-}
+function semakUkuran() {
+    const pinggang = Number(document.getElementById("pinggang").value);
+    const punggung = Number(document.getElementById("punggung").value);
 
-h1 {
-    text-align: center;
-}
+    if (!pinggang || !punggung) {
+        document.getElementById("result").innerHTML =
+            "⚠️ Sila masukkan semua ukuran.";
+        return;
+    }
 
-h2 {
-    margin-top: 30px;
-}
+    const sukuPinggang = pinggang / 4;
+    const sukuPunggung = punggung / 4;
 
-input {
-    width: 100%;
-    padding: 12px;
-    margin-top: 5px;
-    box-sizing: border-box;
-}
+    document.getElementById("formula").innerHTML =
+        "¼ Pinggang = " + sukuPinggang.toFixed(1) +
+        " cm<br>¼ Punggung = " + sukuPunggung.toFixed(1) + " cm";
 
-button {
-    width: 100%;
-    padding: 14px;
-    margin-top: 15px;
-    cursor: pointer;
-}
-
-#result {
-    padding: 20px;
-    background: white;
-    border-radius: 10px;
+    document.getElementById("result").innerHTML =
+        "🟢 UKURAN BERJAYA DIKIRA<br><br>" +
+        "¼ Pinggang: " + sukuPinggang.toFixed(1) + " cm<br>" +
+        "¼ Punggung: " + sukuPunggung.toFixed(1) + " cm";
 }
