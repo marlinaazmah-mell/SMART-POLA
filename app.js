@@ -1,37 +1,54 @@
 document.addEventListener("DOMContentLoaded", () => {
 
-    // =========================================================
-    // 1. AMBIL ELEMEN HTML
-    // =========================================================
+    // =====================================================
+    // ELEMENT HTML
+    // =====================================================
 
     const garmentType = document.getElementById("garmentType");
     const patternPart = document.getElementById("patternPart");
-    const patternSelectionStatus = document.getElementById("patternSelectionStatus");
+    const patternSelectionStatus =
+        document.getElementById("patternSelectionStatus");
 
     const unitSelect = document.getElementById("unit");
 
-    const startCameraBtn = document.getElementById("startCameraBtn");
-    const stopCameraBtn = document.getElementById("stopCameraBtn");
+    const startCameraBtn =
+        document.getElementById("startCameraBtn");
+
+    const stopCameraBtn =
+        document.getElementById("stopCameraBtn");
 
     const camera = document.getElementById("camera");
-    const overlayCanvas = document.getElementById("overlayCanvas");
+    const overlayCanvas =
+        document.getElementById("overlayCanvas");
 
-    const cameraStatus = document.getElementById("cameraStatus");
-    const detectionStatus = document.getElementById("detectionStatus");
+    const cameraStatus =
+        document.getElementById("cameraStatus");
 
-    const analyzeBtn = document.getElementById("analyzeBtn");
+    const detectionStatus =
+        document.getElementById("detectionStatus");
 
-    const resultTitle = document.getElementById("resultTitle");
-    const resultMessage = document.getElementById("resultMessage");
+    const analyzeBtn =
+        document.getElementById("analyzeBtn");
 
-    const measuredValue = document.getElementById("measuredValue");
-    const expectedValue = document.getElementById("expectedValue");
-    const differenceValue = document.getElementById("differenceValue");
+    const resultTitle =
+        document.getElementById("resultTitle");
+
+    const resultMessage =
+        document.getElementById("resultMessage");
+
+    const measuredValue =
+        document.getElementById("measuredValue");
+
+    const expectedValue =
+        document.getElementById("expectedValue");
+
+    const differenceValue =
+        document.getElementById("differenceValue");
 
 
-    // =========================================================
-    // 2. SENARAI BAHAGIAN POLA
-    // =========================================================
+    // =====================================================
+    // BAHAGIAN POLA
+    // =====================================================
 
     const patternOptions = {
 
@@ -62,28 +79,23 @@ document.addEventListener("DOMContentLoaded", () => {
     };
 
 
-    // =========================================================
-    // 3. DROPDOWN BAHAGIAN POLA
-    // =========================================================
-
     function updatePatternParts() {
 
-        const selectedGarment = garmentType.value;
+        const selected = garmentType.value;
 
-        // Kosongkan pilihan lama
         patternPart.innerHTML = "";
 
-        // Pilihan pertama
-        const defaultOption = document.createElement("option");
+        const firstOption =
+            document.createElement("option");
 
-        defaultOption.value = "";
-        defaultOption.textContent = "-- Pilih bahagian pola --";
+        firstOption.value = "";
+        firstOption.textContent =
+            "-- Pilih bahagian pola --";
 
-        patternPart.appendChild(defaultOption);
+        patternPart.appendChild(firstOption);
 
 
-        // Jika belum pilih jenis pakaian
-        if (!selectedGarment) {
+        if (!selected) {
 
             patternSelectionStatus.textContent =
                 "Sila pilih jenis pakaian dahulu.";
@@ -92,14 +104,13 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
 
-        // Dapatkan senarai bahagian pola
-        const parts = patternOptions[selectedGarment] || [];
+        const parts = patternOptions[selected] || [];
 
 
-        // Masukkan setiap bahagian ke dropdown
         parts.forEach((part) => {
 
-            const option = document.createElement("option");
+            const option =
+                document.createElement("option");
 
             option.value = part;
             option.textContent = part;
@@ -115,23 +126,21 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
 
-    // Bila Jenis Pakaian berubah
-    if (garmentType) {
-
-        garmentType.addEventListener("change", updatePatternParts);
-
-    }
+    garmentType.addEventListener(
+        "change",
+        updatePatternParts
+    );
 
 
-    // Bila Bahagian Pola dipilih
-    if (patternPart) {
-
-        patternPart.addEventListener("change", () => {
+    patternPart.addEventListener(
+        "change",
+        () => {
 
             if (patternPart.value) {
 
                 patternSelectionStatus.textContent =
-                    "Bahagian pola dipilih: " + patternPart.value;
+                    "Bahagian pola dipilih: " +
+                    patternPart.value;
 
             } else {
 
@@ -140,58 +149,67 @@ document.addEventListener("DOMContentLoaded", () => {
 
             }
 
-        });
-
-    }
-
-
-    // =========================================================
-    // 4. UNIT UKURAN
-    // =========================================================
-
-    if (unitSelect) {
-
-        unitSelect.addEventListener("change", () => {
-
-            const selectedUnit = unitSelect.value;
-
-            const unitLabels = document.querySelectorAll(".unit-label");
-
-            unitLabels.forEach((label) => {
-
-                label.textContent = selectedUnit;
-
-            });
-
-        });
-
-    }
+        }
+    );
 
 
-    // =========================================================
-    // 5. KAMERA
-    // =========================================================
+    // =====================================================
+    // UNIT
+    // =====================================================
+
+    unitSelect.addEventListener(
+        "change",
+        () => {
+
+            document
+                .querySelectorAll(".unit-label")
+                .forEach((label) => {
+
+                    label.textContent =
+                        unitSelect.value;
+
+                });
+
+        }
+    );
+
+
+    // =====================================================
+    // KAMERA
+    // =====================================================
 
     let cameraStream = null;
-    let detectionAnimation = null;
+    let animationFrame = null;
 
 
     async function startCamera() {
 
         try {
 
-            cameraStream = await navigator.mediaDevices.getUserMedia({
+            cameraStream =
+                await navigator.mediaDevices.getUserMedia({
 
-                video: {
-                    facingMode: "environment"
-                },
+                    video: {
+                        facingMode: {
+                            ideal: "environment"
+                        },
 
-                audio: false
+                        width: {
+                            ideal: 1280
+                        },
 
-            });
+                        height: {
+                            ideal: 720
+                        }
+                    },
+
+                    audio: false
+
+                });
 
 
-            camera.srcObject = cameraStream;
+            camera.srcObject =
+                cameraStream;
 
             await camera.play();
 
@@ -203,7 +221,7 @@ document.addEventListener("DOMContentLoaded", () => {
             stopCameraBtn.disabled = false;
 
 
-            startDetection();
+            startLineDetection();
 
 
         } catch (error) {
@@ -222,13 +240,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (cameraStream) {
 
-            cameraStream.getTracks().forEach((track) => {
-
-                track.stop();
-
-            });
+            cameraStream
+                .getTracks()
+                .forEach((track) => track.stop());
 
             cameraStream = null;
+
+        }
+
+
+        if (animationFrame) {
+
+            cancelAnimationFrame(animationFrame);
+
+            animationFrame = null;
 
         }
 
@@ -236,16 +261,8 @@ document.addEventListener("DOMContentLoaded", () => {
         camera.srcObject = null;
 
 
-        if (detectionAnimation) {
-
-            cancelAnimationFrame(detectionAnimation);
-
-            detectionAnimation = null;
-
-        }
-
-
-        const ctx = overlayCanvas.getContext("2d");
+        const ctx =
+            overlayCanvas.getContext("2d");
 
         ctx.clearRect(
             0,
@@ -267,35 +284,35 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
 
-    if (startCameraBtn) {
-
-        startCameraBtn.addEventListener("click", startCamera);
-
-    }
-
-
-    if (stopCameraBtn) {
-
-        stopCameraBtn.addEventListener("click", stopCamera);
-
-    }
+    startCameraBtn.addEventListener(
+        "click",
+        startCamera
+    );
 
 
-    // =========================================================
-    // 6. PENGESANAN GARISAN ASAS
-    // =========================================================
-
-    function startDetection() {
-
-        if (!camera || !overlayCanvas) {
-            return;
-        }
+    stopCameraBtn.addEventListener(
+        "click",
+        stopCamera
+    );
 
 
-        const ctx = overlayCanvas.getContext("2d");
+    // =====================================================
+    // LINE DETECTION
+    // =====================================================
+
+    function startLineDetection() {
+
+        const ctx =
+            overlayCanvas.getContext("2d");
+
+        const processingCanvas =
+            document.createElement("canvas");
+
+        const processingCtx =
+            processingCanvas.getContext("2d");
 
 
-        function detect() {
+        function detectLines() {
 
             if (!cameraStream) {
                 return;
@@ -307,18 +324,166 @@ document.addEventListener("DOMContentLoaded", () => {
                 camera.videoHeight === 0
             ) {
 
-                detectionAnimation =
-                    requestAnimationFrame(detect);
+                animationFrame =
+                    requestAnimationFrame(
+                        detectLines
+                    );
 
                 return;
 
             }
 
 
-            // Samakan saiz canvas dengan video
-            overlayCanvas.width = camera.videoWidth;
-            overlayCanvas.height = camera.videoHeight;
+            // Saiz pemprosesan lebih kecil
+            // supaya telefon/laptop tidak terlalu berat
 
+            const scale = 0.35;
+
+            const width =
+                Math.floor(
+                    camera.videoWidth * scale
+                );
+
+            const height =
+                Math.floor(
+                    camera.videoHeight * scale
+                );
+
+
+            processingCanvas.width = width;
+            processingCanvas.height = height;
+
+
+            overlayCanvas.width =
+                camera.videoWidth;
+
+            overlayCanvas.height =
+                camera.videoHeight;
+
+
+            // Ambil imej kamera
+
+            processingCtx.drawImage(
+                camera,
+                0,
+                0,
+                width,
+                height
+            );
+
+
+            const imageData =
+                processingCtx.getImageData(
+                    0,
+                    0,
+                    width,
+                    height
+                );
+
+
+            const pixels =
+                imageData.data;
+
+
+            // =================================================
+            // SOBEL EDGE DETECTION
+            // =================================================
+
+            const edges =
+                new Uint8ClampedArray(
+                    width * height
+                );
+
+
+            for (
+                let y = 1;
+                y < height - 1;
+                y++
+            ) {
+
+                for (
+                    let x = 1;
+                    x < width - 1;
+                    x++
+                ) {
+
+                    const p =
+                        (y * width + x) * 4;
+
+                    const left =
+                        ((y * width) + (x - 1)) * 4;
+
+                    const right =
+                        ((y * width) + (x + 1)) * 4;
+
+                    const top =
+                        (((y - 1) * width) + x) * 4;
+
+                    const bottom =
+                        (((y + 1) * width) + x) * 4;
+
+
+                    const grayLeft =
+                        (
+                            pixels[left] +
+                            pixels[left + 1] +
+                            pixels[left + 2]
+                        ) / 3;
+
+
+                    const grayRight =
+                        (
+                            pixels[right] +
+                            pixels[right + 1] +
+                            pixels[right + 2]
+                        ) / 3;
+
+
+                    const grayTop =
+                        (
+                            pixels[top] +
+                            pixels[top + 1] +
+                            pixels[top + 2]
+                        ) / 3;
+
+
+                    const grayBottom =
+                        (
+                            pixels[bottom] +
+                            pixels[bottom + 1] +
+                            pixels[bottom + 2]
+                        ) / 3;
+
+
+                    const gx =
+                        grayRight - grayLeft;
+
+                    const gy =
+                        grayBottom - grayTop;
+
+
+                    const magnitude =
+                        Math.sqrt(
+                            gx * gx +
+                            gy * gy
+                        );
+
+
+                    edges[
+                        y * width + x
+                    ] =
+                        magnitude > 55
+                            ? 255
+                            : 0;
+
+                }
+
+            }
+
+
+            // =================================================
+            // PAPAR GARISAN YANG DIKESAN
+            // =================================================
 
             ctx.clearRect(
                 0,
@@ -328,80 +493,77 @@ document.addEventListener("DOMContentLoaded", () => {
             );
 
 
-            /*
-             * Buat masa ini kita bina kawasan panduan
-             * untuk pola.
-             *
-             * Sistem pengesanan garisan sebenar
-             * akan dimasukkan selepas modul formula
-             * dan pengukuran disediakan.
-             */
+            const scaleX =
+                camera.videoWidth / width;
+
+            const scaleY =
+                camera.videoHeight / height;
 
 
-            const marginX =
-                overlayCanvas.width * 0.08;
-
-            const marginY =
-                overlayCanvas.height * 0.08;
+            ctx.fillStyle =
+                "rgba(255,255,255,0.9)";
 
 
-            const width =
-                overlayCanvas.width - (marginX * 2);
+            // Lukis titik/gabungan garisan yang dikesan
 
-            const height =
-                overlayCanvas.height - (marginY * 2);
+            for (
+                let y = 2;
+                y < height - 2;
+                y += 2
+            ) {
 
+                for (
+                    let x = 2;
+                    x < width - 2;
+                    x += 2
+                ) {
 
-            ctx.setLineDash([12, 8]);
-
-            ctx.lineWidth = 3;
-
-            ctx.strokeStyle = "rgba(255,255,255,0.9)";
-
-
-            ctx.strokeRect(
-                marginX,
-                marginY,
-                width,
-                height
-            );
+                    const index =
+                        y * width + x;
 
 
-            ctx.setLineDash([]);
+                    if (edges[index] === 255) {
+
+                        ctx.fillRect(
+                            x * scaleX,
+                            y * scaleY,
+                            2,
+                            2
+                        );
+
+                    }
+
+                }
+
+            }
 
 
             detectionStatus.textContent =
-                "Kamera aktif — halakan kamera pada pola.";
+                "Garisan pola sedang dikesan...";
 
 
-            detectionAnimation =
-                requestAnimationFrame(detect);
+            animationFrame =
+                requestAnimationFrame(
+                    detectLines
+                );
 
         }
 
 
-        detect();
+        detectLines();
 
     }
 
 
-    // =========================================================
-    // 7. ANALISIS POLA
-    // =========================================================
+    // =====================================================
+    // ANALISIS
+    // =====================================================
 
-    if (analyzeBtn) {
+    analyzeBtn.addEventListener(
+        "click",
+        () => {
 
-        analyzeBtn.addEventListener("click", () => {
-
-            const selectedGarment =
-                garmentType.value;
-
-            const selectedPattern =
-                patternPart.value;
-
-
-            // Semak jenis pakaian
-            if (!selectedGarment) {
+            if (!garmentType.value) {
 
                 resultTitle.textContent =
                     "Maklumat belum lengkap";
@@ -414,8 +576,7 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
 
-            // Semak bahagian pola
-            if (!selectedPattern) {
+            if (!patternPart.value) {
 
                 resultTitle.textContent =
                     "Maklumat belum lengkap";
@@ -428,78 +589,40 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
 
-            // Buat masa ini belum gunakan formula sebenar.
-            // Formula GIATMARA akan dimasukkan kemudian.
-
-
             resultTitle.textContent =
-                "Pola sedia untuk dianalisis";
+                "Pola berjaya diimbas";
+
 
             resultMessage.textContent =
-                "SMART-POLA telah menerima pilihan pola. Formula pengiraan akan digunakan selepas dimasukkan ke dalam sistem.";
+                "SMART-POLA telah mengesan garisan pola. Pengiraan ukuran dan semakan formula akan digunakan dalam modul seterusnya.";
 
 
-            if (measuredValue) {
+            measuredValue.textContent =
+                "--";
 
-                measuredValue.textContent =
-                    "--";
+            expectedValue.textContent =
+                "--";
 
-            }
+            differenceValue.textContent =
+                "--";
 
-
-            if (expectedValue) {
-
-                expectedValue.textContent =
-                    "--";
-
-            }
+        }
+    );
 
 
-            if (differenceValue) {
+    // =====================================================
+    // STATUS AWAL
+    // =====================================================
 
-                differenceValue.textContent =
-                    "--";
+    patternSelectionStatus.textContent =
+        "Sila pilih jenis pakaian dahulu.";
 
-            }
+    cameraStatus.textContent =
+        "Kamera belum diaktifkan.";
 
-        });
+    detectionStatus.textContent =
+        "Pengesanan garisan tidak aktif.";
 
-    }
-
-
-    // =========================================================
-    // 8. STATUS AWAL
-    // =========================================================
-
-    if (patternSelectionStatus) {
-
-        patternSelectionStatus.textContent =
-            "Sila pilih jenis pakaian dahulu.";
-
-    }
-
-
-    if (cameraStatus) {
-
-        cameraStatus.textContent =
-            "Kamera belum diaktifkan.";
-
-    }
-
-
-    if (detectionStatus) {
-
-        detectionStatus.textContent =
-            "Pengesanan garisan tidak aktif.";
-
-    }
-
-
-    if (stopCameraBtn) {
-
-        stopCameraBtn.disabled = true;
-
-    }
-
+    stopCameraBtn.disabled = true;
 
 });
