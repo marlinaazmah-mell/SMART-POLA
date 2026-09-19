@@ -263,15 +263,45 @@
 
         </div>
 
-    </section>
+      </section>
 
 </main>
-
 
 <footer>
     SMART-POLA © 2026
 </footer>
 
+<!-- Dropdown Bahagian Pola -->
+<script>
+const garmentType = document.getElementById("garmentType");
+const patternPart = document.getElementById("patternPart");
+
+const patternOptions = {
+  baju: ["Badan Hadapan","Badan Belakang","Lengan","Kolar","Manset"],
+  kain: ["Pola Kain","Pinggang"],
+  seluar: ["Badan Seluar Hadapan","Badan Seluar Belakang","Pinggang","Poket"],
+  lain: ["Bahagian Lain"]
+};
+
+if (garmentType && patternPart) {
+  garmentType.addEventListener("change", function () {
+
+    patternPart.innerHTML = '<option value="">-- Pilih bahagian pola --</option>';
+
+    if (!this.value) return;
+
+    patternOptions[this.value].forEach(function(part){
+
+      const option = document.createElement("option");
+      option.value = part;
+      option.textContent = part;
+      patternPart.appendChild(option);
+
+    });
+
+  });
+}
+</script>
 
 <script src="app.js"></script>
 
