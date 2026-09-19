@@ -104,7 +104,8 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
 
-        const parts = patternOptions[selected] || [];
+        const parts =
+            patternOptions[selected] || [];
 
 
         parts.forEach((part) => {
@@ -181,6 +182,8 @@ document.addEventListener("DOMContentLoaded", () => {
     let cameraStream = null;
     let animationFrame = null;
 
+    let currentPattern = null;
+
 
     async function startCamera() {
 
@@ -221,8 +224,7 @@ document.addEventListener("DOMContentLoaded", () => {
             stopCameraBtn.disabled = false;
 
 
-            startLineDetection();
-
+            startPatternScan();
 
         } catch (error) {
 
@@ -272,11 +274,14 @@ document.addEventListener("DOMContentLoaded", () => {
         );
 
 
+        currentPattern = null;
+
+
         cameraStatus.textContent =
             "Kamera dihentikan.";
 
         detectionStatus.textContent =
-            "Pengesanan garisan tidak aktif.";
+            "Pengesanan pola tidak aktif.";
 
         startCameraBtn.disabled = false;
         stopCameraBtn.disabled = true;
@@ -297,10 +302,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     // =====================================================
-    // LINE DETECTION
+    // PATTERN SCAN ENGINE
     // =====================================================
 
-    function startLineDetection() {
+    function startPatternScan() {
 
         const ctx =
             overlayCanvas.getContext("2d");
@@ -312,7 +317,7 @@ document.addEventListener("DOMContentLoaded", () => {
             processingCanvas.getContext("2d");
 
 
-        function detectLines() {
+        function scan() {
 
             if (!cameraStream) {
                 return;
@@ -325,19 +330,18 @@ document.addEventListener("DOMContentLoaded", () => {
             ) {
 
                 animationFrame =
-                    requestAnimationFrame(
-                        detectLines
-                    );
+                    requestAnimationFrame(scan);
 
                 return;
 
             }
 
 
-            // Saiz pemprosesan lebih kecil
-            // supaya telefon/laptop tidak terlalu berat
+            // -------------------------------------------------
+            // KECILKAN IMAGE UNTUK PEMPROSESAN
+            // -------------------------------------------------
 
-            const scale = 0.35;
+            const scale = 0.30;
 
             const width =
                 Math.floor(
@@ -361,8 +365,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 camera.videoHeight;
 
 
-            // Ambil imej kamera
-
             processingCtx.drawImage(
                 camera,
                 0,
@@ -385,12 +387,12 @@ document.addEventListener("DOMContentLoaded", () => {
                 imageData.data;
 
 
-            // =================================================
-            // SOBEL EDGE DETECTION
-            // =================================================
+            // -------------------------------------------------
+            // CARI EDGE / GARISAN
+            // -------------------------------------------------
 
             const edges =
-                new Uint8ClampedArray(
+                new Uint8Array(
                     width * height
                 );
 
@@ -406,9 +408,6 @@ document.addEventListener("DOMContentLoaded", () => {
                     x < width - 1;
                     x++
                 ) {
-
-                    const p =
-                        (y * width + x) * 4;
 
                     const left =
                         ((y * width) + (x - 1)) * 4;
@@ -464,26 +463,71 @@ document.addEventListener("DOMContentLoaded", () => {
 
                     const magnitude =
                         Math.sqrt(
-                            gx * gx +
-                            gy * gy
+                            (gx * gx) +
+                            (gy * gy)
                         );
 
 
-                    edges[
-                        y * width + x
-                    ] =
-                        magnitude > 55
-                            ? 255
-                            : 0;
+                    if (magnitude > 55) {
+
+                        edges[
+                            y * width + x
+                        ] = 1;
+
+                    }
 
                 }
 
             }
 
 
-            // =================================================
-            // PAPAR GARISAN YANG DIKESAN
-            // =================================================
+            // -------------------------------------------------
+            // CARI BOUNDING BOX
+            // -------------------------------------------------
+
+            let minX = width;
+            let minY = height;
+            let maxX = 0;
+            let maxY = 0;
+
+            let detectedPixels = 0;
+
+
+            for (
+                let y = 1;
+                y < height - 1;
+                y++
+            ) {
+
+                for (
+                    let x = 1;
+                    x < width - 1;
+                    x++
+                ) {
+
+                    if (
+                        edges[
+                            y * width + x
+                        ] === 1
+                    ) {
+
+                        detectedPixels++;
+
+                        if (x < minX) minX = x;
+                        if (x > maxX) maxX = x;
+                        if (y < minY) minY = y;
+                        if (y > maxY) maxY = y;
+
+                    }
+
+                }
+
+            }
+
+
+            // -------------------------------------------------
+            // PAPARKAN HASIL SCAN
+            // -------------------------------------------------
 
             ctx.clearRect(
                 0,
@@ -493,70 +537,109 @@ document.addEventListener("DOMContentLoaded", () => {
             );
 
 
-            const scaleX =
-                camera.videoWidth / width;
+            if (detectedPixels > 150) {
 
-            const scaleY =
-                camera.videoHeight / height;
+                const scaleX =
+                    camera.videoWidth / width;
 
-
-            ctx.fillStyle =
-                "rgba(255,255,255,0.9)";
+                const scaleY =
+                    camera.videoHeight / height;
 
 
-            // Lukis titik/gabungan garisan yang dikesan
+                const boxX =
+                    minX * scaleX;
 
-            for (
-                let y = 2;
-                y < height - 2;
-                y += 2
-            ) {
+                const boxY =
+                    minY * scaleY;
 
-                for (
-                    let x = 2;
-                    x < width - 2;
-                    x += 2
-                ) {
+                const boxWidth =
+                    (maxX - minX) * scaleX;
 
-                    const index =
-                        y * width + x;
+                const boxHeight =
+                    (maxY - minY) * scaleY;
 
 
-                    if (edges[index] === 255) {
+                // Kotak kawasan pola
 
-                        ctx.fillRect(
-                            x * scaleX,
-                            y * scaleY,
-                            2,
-                            2
-                        );
+                ctx.strokeStyle =
+                    "rgba(0,255,0,0.9)";
 
-                    }
+                ctx.lineWidth = 4;
 
-                }
+                ctx.setLineDash([]);
+
+                ctx.strokeRect(
+                    boxX,
+                    boxY,
+                    boxWidth,
+                    boxHeight
+                );
+
+
+                // Titik tengah
+
+                const centerX =
+                    boxX + boxWidth / 2;
+
+                const centerY =
+                    boxY + boxHeight / 2;
+
+
+                ctx.beginPath();
+
+                ctx.arc(
+                    centerX,
+                    centerY,
+                    8,
+                    0,
+                    Math.PI * 2
+                );
+
+                ctx.fillStyle =
+                    "rgba(0,255,0,0.9)";
+
+                ctx.fill();
+
+
+                // Simpan data pola
+
+                currentPattern = {
+
+                    pixelWidth: boxWidth,
+
+                    pixelHeight: boxHeight,
+
+                    detectedPixels: detectedPixels
+
+                };
+
+
+                detectionStatus.textContent =
+                    "Pola dikesan — kawasan pola dikenal pasti.";
+
+            } else {
+
+                currentPattern = null;
+
+                detectionStatus.textContent =
+                    "Halakan kamera pada pola sehingga garisan dapat dikesan.";
 
             }
 
 
-            detectionStatus.textContent =
-                "Garisan pola sedang dikesan...";
-
-
             animationFrame =
-                requestAnimationFrame(
-                    detectLines
-                );
+                requestAnimationFrame(scan);
 
         }
 
 
-        detectLines();
+        scan();
 
     }
 
 
     // =====================================================
-    // ANALISIS
+    // ANALISIS POLA
     // =====================================================
 
     analyzeBtn.addEventListener(
@@ -589,22 +672,49 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
 
+            if (!currentPattern) {
+
+                resultTitle.textContent =
+                    "Pola belum dikesan";
+
+                resultMessage.textContent =
+                    "Sila buka kamera dan halakan pada pola terlebih dahulu.";
+
+                return;
+
+            }
+
+
+            const widthPx =
+                currentPattern.pixelWidth;
+
+            const heightPx =
+                currentPattern.pixelHeight;
+
+
+            // Buat masa ini ukuran masih dalam PIXEL.
+            // Skala cm/inci akan dimasukkan selepas
+            // kaedah calibration ditetapkan.
+
+
+            measuredValue.textContent =
+                `${Math.round(widthPx)} px × ${Math.round(heightPx)} px`;
+
+
+            expectedValue.textContent =
+                "Belum ditetapkan";
+
+
+            differenceValue.textContent =
+                "Belum dikira";
+
+
             resultTitle.textContent =
                 "Pola berjaya diimbas";
 
 
             resultMessage.textContent =
-                "SMART-POLA telah mengesan garisan pola. Pengiraan ukuran dan semakan formula akan digunakan dalam modul seterusnya.";
-
-
-            measuredValue.textContent =
-                "--";
-
-            expectedValue.textContent =
-                "--";
-
-            differenceValue.textContent =
-                "--";
+                "SMART-POLA telah mengenal pasti kawasan pola dan mendapatkan ukuran awal. Skala sebenar serta formula GIATMARA akan disambungkan pada langkah seterusnya.";
 
         }
     );
@@ -621,7 +731,7 @@ document.addEventListener("DOMContentLoaded", () => {
         "Kamera belum diaktifkan.";
 
     detectionStatus.textContent =
-        "Pengesanan garisan tidak aktif.";
+        "Pengesanan pola tidak aktif.";
 
     stopCameraBtn.disabled = true;
 
