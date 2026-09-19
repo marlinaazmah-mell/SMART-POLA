@@ -60,6 +60,28 @@
 </div>
 
 <script src="semakan.js"></script>
+    <hr>
+
+<h2>5. IMBAS POLA</h2>
+
+<input
+    type="file"
+    id="gambarPola"
+    accept="image/*"
+    capture="environment"
+    onchange="paparGambar(event)"
+    style="display:none;"
+>
+
+<button onclick="bukaKamera()">📷 BUKA KAMERA / PILIH GAMBAR</button>
+
+<p id="statusKamera">Belum ada gambar.</p>
+
+<img
+    id="previewPola"
+    style="display:none; width:100%; margin-top:15px; border-radius:10px;"
+    alt="Pratonton pola"
+>
 <script src="script.js"></script>
 <script src="kamera.js"></script>
 
