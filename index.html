@@ -363,32 +363,62 @@
             </div>
 
 
-            <div class="camera-controls">
+<div class="camera-controls">
+
+    <button
+        type="button"
+        class="primary-button"
+        id="startCamera">
+
+        Mula Kamera
+
+    </button>
 
 
-                <button
-                    type="button"
-                    class="primary-button"
-                    id="startCamera">
+    <button
+        type="button"
+        class="secondary-button"
+        id="captureImage"
+        disabled>
 
-                    Mula Kamera
+        📸 Ambil Gambar
 
-                </button>
-
-
-                <button
-                    type="button"
-                    class="secondary-button"
-                    id="stopCamera"
-                    disabled>
-
-                    Hentikan Kamera
-
-                </button>
+    </button>
 
 
-            </div>
+    <button
+        type="button"
+        class="secondary-button"
+        id="stopCamera"
+        disabled>
 
+        Hentikan Kamera
+
+    </button>
+
+</div>
+
+
+<!-- HASIL GAMBAR POLA -->
+
+<div class="captured-pattern">
+
+    <h3>Gambar Pola</h3>
+
+    <div class="captured-image-box">
+
+        <img
+            id="capturedImage"
+            alt="Gambar pola yang diambil"
+            style="display:none;">
+
+        <p id="noImageMessage">
+            Belum ada gambar pola.
+        </p>
+
+    </div>
+
+</div>
 
             <div class="status-box">
 
