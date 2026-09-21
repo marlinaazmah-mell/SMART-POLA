@@ -363,7 +363,37 @@ Skala
 <strong id="formulaStatus">
 Belum ditentukur
 </strong>
+</div>  </div>
+<!-- KEPEKAAN PENGESANAN -->
+<div class="sensitivity-row">
+<label for="edgeSensitivity">
+Kepekaan pengesanan
+</label>
+<input
+type="range"
+id="edgeSensitivity"
+min="1"
+max="10"
+step="1"
+value="5">
+<span class="sensitivity-value" id="sensitivityValue">5</span>
 </div>
+<!-- PILIHAN KEPING POLA (multi-piece) -->
+<div class="piece-chips" id="pieceChips" style="display:none;"></div>
+<!-- NAMA KEPING -->
+<div class="piece-rename" id="pieceRename" style="display:none;">
+<input
+type="text"
+id="pieceNameInput"
+maxlength="24"
+placeholder="Nama keping (cth: Depan, Lengan)">
+<button type="button" class="chip" id="renamePieceButton">✏️ Simpan Nama</button>
+</div>
+<!-- BUTIRAN UKURAN AUTOMATIK -->
+<div class="auto-chips" id="autoChips" style="display:none;">
+<button type="button" class="chip" id="chipLength">📐 Lebar: —</button>
+<button type="button" class="chip" id="chipWidth">📏 Terpanjang: —</button>
+<button type="button" class="chip" id="chipHeight">↕️ Tinggi: —</button>
 </div>
 <!-- FORMULA -->
 <div class="formula-box">
@@ -504,12 +534,24 @@ SMART-POLA © 2026 · <a href="checklist.html">Senarai Semak Deployment</a>
 <!-- ================================
 JAVASCRIPT
 ================================ -->
-<script src="app.js"></script>
+<script src="app.js?v=4.1.1"></script>
 <script>
 // Service Worker + pemasangan PWA
 if ("serviceWorker" in navigator) {
 window.addEventListener("load", () => {
-navigator.serviceWorker.register("sw.js").catch(console.error);
+navigator.serviceWorker.register("sw.js").then((reg) => {
+// Jika service worker baharu mengambil alih, muat semula supaya
+// semua fail (HTML + JS + CSS) sentiasa sepadan dari segi versi
+reg.addEventListener("updatefound", () => {
+const newWorker = reg.installing;
+if (!newWorker) return;
+newWorker.addEventListener("statechange", () => {
+if (newWorker.state === "activated" && navigator.serviceWorker.controller) {
+location.reload();
+}
+});
+});
+}).catch(console.error);
 });
 }
 let deferredPrompt = null;

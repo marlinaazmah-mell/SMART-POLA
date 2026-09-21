@@ -10,7 +10,7 @@ dan rekod pencapaian (Smart-POLA Passport).
 ## Ciri (V4.0)
 1. **Data Ukuran Badan** — 7 ukuran (bahu, dada, pinggang, pinggul, leher, labuh belakang, labuh kain/seluar). Unit cm/inci — **unit dipilih digunakan seragam di seluruh aplikasi**: medan input, simbol, sasaran, formula, ukuran pola, jadual semakan, keputusan dan Passport. Nilai disimpan secara dalaman dalam cm dan ditukar paparan secara automatik. Disimpan dalam `localStorage`.
 2. **Tetapan Pola** — pilih jenis pakaian (baju/kain/seluar/lain) dan bahagian pola. Sasaran dikira secara automatik (¼ bagi ukuran keliling, 1:1 bagi panjang) dengan toleransi ±0.5 cm.
-3. **Imbas Pola** — kamera belakang telefon, ambil gambar pola, analisis garisan gelap dengan paparan overlay hijau.
+3. **Imbas Pola** — kamera belakang telefon, ambil gambar pola, **pengesanan garisan sebenar**: grayscale → Gaussian blur → Sobel edge detection → ambang adaptif → penutupan morfologi (sambung garisan putus-putus) → komponen bersambung. Tepi pola dipaparkan hijau, kotak sempadan oren, dengan 3 butiran ukuran (lebar / garisan terpanjang / tinggi) yang boleh dipilih sebagai ukuran automatik.
 4. **Penentukuran** — kad hitam dikesan secara automatik dalam gambar; masukkan lebar kad sebenar (cm) untuk mendapatkan skala cm/piksel. Jika kad gagal dikesan, ukuran relatif masih boleh dibandingkan.
 5. **Ukur Pola** — dua cara:
    - **Manual:** klik dua titik (mula/tamat) pada gambar pola — jarak piksel ditukar kepada cm.

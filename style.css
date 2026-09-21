@@ -331,6 +331,75 @@ margin-bottom: 8px;
 .analysis-item strong {
 font-size: 18px;
 }
+/* =========================
+KEPEKAAN & KEPING POLA
+========================= */
+.sensitivity-row {
+display: flex;
+align-items: center;
+gap: 12px;
+margin-top: 18px;
+}
+.sensitivity-row label {
+font-weight: bold;
+font-size: 14px;
+}
+.sensitivity-row input[type="range"] {
+flex: 1;
+max-width: 260px;
+accent-color: #111827;
+}
+.sensitivity-value {
+font-weight: bold;
+min-width: 24px;
+text-align: center;
+background: #eef2ff;
+border: 1px solid #c7d2fe;
+border-radius: 8px;
+padding: 4px 8px;
+}
+.piece-chips {
+display: flex;
+flex-wrap: wrap;
+gap: 8px;
+margin-top: 10px;
+}
+.piece-rename {
+display: flex;
+gap: 8px;
+margin-top: 8px;
+}
+.piece-rename input {
+flex: 1;
+min-width: 0;
+padding: 10px 12px;
+border: 1px solid #c7c7c7;
+border-radius: 8px;
+font-size: 16px;
+}
+/* =========================
+BUTIRAN UKURAN AUTOMATIK
+========================= */
+.auto-chips {
+display: flex;
+flex-wrap: wrap;
+gap: 8px;
+margin-top: 14px;
+}
+.chip {
+border: 1px solid #c7d2fe;
+background: #eef2ff;
+color: #111827;
+padding: 10px 14px;
+border-radius: 999px;
+cursor: pointer;
+font-size: 14px;
+}
+.chip.active {
+background: #111827;
+color: #fff;
+border-color: #111827;
+}
 .formula-box {
 margin-top: 18px;
 padding: 16px;
