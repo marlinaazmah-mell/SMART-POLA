@@ -66,18 +66,27 @@ async function startCameraFunction() {
 
         camera.srcObject = cameraStream;
 
-        await camera.play();
+await camera.play();
 
-        // Tetapkan saiz canvas ikut kamera
-        overlayCanvas.width = camera.videoWidth;
-        overlayCanvas.height = camera.videoHeight;
+// Tunggu sehingga saiz video kamera tersedia
+if (camera.readyState >= 2) {
 
-        canvasInput.width = camera.videoWidth;
-        canvasInput.height = camera.videoHeight;
+    canvasInput.width = camera.videoWidth;
+    canvasInput.height = camera.videoHeight;
 
-        startCamera.disabled = true;
-        stopCamera.disabled = false;
-        captureImage.disabled = false;
+    overlayCanvas.width = camera.videoWidth;
+    overlayCanvas.height = camera.videoHeight;
+
+}
+
+// Aktifkan kawalan kamera
+startCamera.disabled = true;
+stopCamera.disabled = false;
+captureImage.disabled = false;
+
+updateStatus(
+    "Kamera sedang aktif. Tekan 📸 Ambil Gambar untuk mengambil gambar pola."
+);
 
         updateStatus("Kamera sedang aktif. Letakkan pola dalam pandangan kamera.");
 
