@@ -256,27 +256,21 @@ muted>
 <canvas
 id="overlayCanvas">
 </canvas>
+<button
+type="button"
+id="flipCamera"
+class="flip-button"
+hidden
+aria-label="Tukar kamera depan/belakang">
+🔄
+</button>
 </div>
 <div class="camera-controls">
 <button
 type="button"
 class="primary-button"
-id="startCamera">
-Mula Kamera
-</button>
-<button
-type="button"
-class="secondary-button"
-id="captureImage"
-disabled>
-📸 Ambil Gambar
-</button>
-<button
-type="button"
-class="secondary-button"
-id="stopCamera"
-disabled>
-Hentikan Kamera
+id="cameraButton">
+📷 Buka Kamera
 </button>
 </div>
 <!-- PENENTUKURAN -->
@@ -287,7 +281,7 @@ Kad penentukuran dikesan secara automatik daripada segi empat hitam dalam gambar
 </p>
 <div class="calibration-row">
 <label for="calibrationWidth">
-Lebar kad penentukuran (cm)
+Lebar kad penentukuran (<span id="calibrationUnitLabel">cm</span>)
 </label>
 <input
 type="number"

@@ -7,7 +7,7 @@
 // Naikkan CACHE_NAME setiap kali anda mengemas kini fail
 // supaya semua pelajar menerima versi baharu.
 // =========================================================
-const CACHE_NAME = "smartpola-v4.0.2";
+const CACHE_NAME = "smartpola-v4.0.6";
 const PRECACHE = [
   "./",
   "./index.html",

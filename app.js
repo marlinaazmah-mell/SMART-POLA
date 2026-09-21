@@ -28,9 +28,8 @@ const patternSelectionStatus = document.getElementById("patternSelectionStatus")
 const camera = document.getElementById("camera");
 const canvasInput = document.getElementById("canvasInput");
 const overlayCanvas = document.getElementById("overlayCanvas");
-const startCameraBtn = document.getElementById("startCamera");
-const stopCameraBtn = document.getElementById("stopCamera");
-const captureImageBtn = document.getElementById("captureImage");
+const cameraButton = document.getElementById("cameraButton");
+const flipCameraButton = document.getElementById("flipCamera");
 const capturedImage = document.getElementById("capturedImage");
 const measureCanvas = document.getElementById("measureCanvas");
 const noImageMessage = document.getElementById("noImageMessage");
@@ -62,6 +61,8 @@ const clearPassportButton = document.getElementById("clearPassportButton");
 // 2. VARIABLES
 // =========================================================
 let cameraStream = null;
+let cameraActive = false;   // true semasa kamera hidup (antara buka & ambil)
+let facingMode = "environment"; // "environment" = belakang, "user" = depan
 let measurements = null;      // cm: { shoulder, chest, waist, hip, neck, backLength, labuhSkirt }
 let calibration = null;       // { cmPerPixel }
 let captured = false;
@@ -204,6 +205,61 @@ function reflectMeasurementsToInputs() {
   }
 }
 
+// Tukar simbol unit (cm/in) pada semua medan ukuran
+const unitLabels = document.querySelectorAll(".unit-label");
+function updateUnitLabels() {
+  const label = unitSelect.value === "in" ? "in" : "cm";
+  unitLabels.forEach((span) => {
+    span.textContent = label;
+  });
+  const calibLabel = document.getElementById("calibrationUnitLabel");
+  if (calibLabel) {
+    calibLabel.textContent = label;
+  }
+}
+
+// ---- Paparan unit seragam: semua nilai dipaparkan dalam unit dipilih ----
+function getDisplayUnit() {
+  return unitSelect.value === "in" ? "in" : "cm";
+}
+function cmToDisplay(cm) {
+  return getDisplayUnit() === "in" ? cm / 2.54 : cm;
+}
+function fmtCm(cm) {
+  const unit = getDisplayUnit();
+  const decimals = unit === "in" ? 2 : 1;
+  return `${cmToDisplay(cm).toFixed(decimals)} ${unit}`;
+}
+function fmtDiff(diff) {
+  const unit = getDisplayUnit();
+  const decimals = unit === "in" ? 2 : 1;
+  return `${diff >= 0 ? "+" : ""}${cmToDisplay(diff).toFixed(decimals)} ${unit}`;
+}
+
+// Tukar nilai yang sudah ditaip apabila unit ditukar (cm <-> in)
+function convertInputValues(fromUnit, toUnit) {
+  if (fromUnit === toUnit) return;
+  const toCm = fromUnit === "in" ? 2.54 : 1;
+  const fromCm = toUnit === "in" ? 1 / 2.54 : 1;
+  for (const key of Object.keys(measurementInputs)) {
+    const input = measurementInputs[key];
+    const raw = input.value.trim();
+    if (raw === "") continue;
+    const num = parseFloat(raw);
+    if (isNaN(num) || num < 0) continue;
+    input.value = Math.round(num * toCm * fromCm * 100) / 100;
+  }
+  // Medan lebar kad penentukuran turut ditukar
+  const calib = calibrationWidthInput;
+  const calibRaw = calib.value.trim();
+  if (calibRaw !== "") {
+    const calibNum = parseFloat(calibRaw);
+    if (!isNaN(calibNum) && calibNum >= 0) {
+      calib.value = Math.round(calibNum * toCm * fromCm * 100) / 100;
+    }
+  }
+}
+
 // =========================================================
 // 5. TETAPAN POLA / SASARAN
 // =========================================================
@@ -273,12 +329,12 @@ function refreshTargetInfo() {
   const partLabel = getPartLabel(type, part);
   const isQuarter = QUARTER_PARTS.includes(part);
   const formulaText = isQuarter
-    ? `${partLabel} = ukuran badan ÷ 4 = ${cm.toFixed(1)} cm (toleransi ±${TOLERANCE} cm)`
-    : `${partLabel} = ukuran badan = ${cm.toFixed(1)} cm (toleransi ±${TOLERANCE} cm)`;
+    ? `${partLabel} = ukuran badan ÷ 4 = ${fmtCm(cm)} (toleransi ±${fmtCm(TOLERANCE)})`
+    : `${partLabel} = ukuran badan = ${fmtCm(cm)} (toleransi ±${fmtCm(TOLERANCE)})`;
 
   targetInfo.innerHTML =
-    `🎯 <strong>Sasaran ${partLabel}:</strong> ${cm.toFixed(1)} cm ` +
-    `(toleransi ±${TOLERANCE} cm)`;
+    `🎯 <strong>Sasaran ${partLabel}:</strong> ${fmtCm(cm)} ` +
+    `(toleransi ±${fmtCm(TOLERANCE)})`;
   updateFormulaDetail(formulaText, cm);
   updateCheckButtons();
 }
@@ -297,33 +353,51 @@ function updateFormulaDetail(text) {
 }
 
 // =========================================================
-// 6. MULA KAMERA
+// 6-8. KAMERA 1 BUTANG: buka -> ambil (kamera berhenti automatik)
 // =========================================================
 async function startCameraFunction() {
   try {
+    cameraButton.disabled = true;
     cameraStream = await navigator.mediaDevices.getUserMedia({
       video: {
-        facingMode: "environment"
+        facingMode: { ideal: facingMode }
       },
       audio: false
     });
     camera.srcObject = cameraStream;
     await camera.play();
-
-    // Aktifkan kawalan kamera
-    startCameraBtn.disabled = true;
-    stopCameraBtn.disabled = false;
-    captureImageBtn.disabled = false;
-    updateStatus("Kamera sedang aktif. Letakkan pola dan kad penentukuran dalam pandangan kamera, kemudian ambil gambar.");
+    cameraActive = true;
+    cameraButton.disabled = false;
+    cameraButton.textContent = "📸 Ambil Gambar";
+    flipCameraButton.hidden = false;
+    updateStatus("Kamera aktif. Letakkan pola dan kad penentukuran dalam pandangan, kemudian tekan 📸 Ambil Gambar.");
   } catch (error) {
     console.error(error);
+    cameraActive = false;
+    cameraButton.disabled = false;
+    cameraButton.textContent = "📷 Buka Kamera";
+    flipCameraButton.hidden = true;
     updateStatus("Kamera tidak dapat diaktifkan. Sila semak kebenaran kamera. Gunakan https:// atau localhost.");
   }
 }
 
-// =========================================================
-// 7. HENTIKAN KAMERA
-// =========================================================
+async function flipCameraFunction() {
+  if (!cameraActive) return;
+  facingMode = facingMode === "environment" ? "user" : "environment";
+  // Hentikan strim sedia ada dan mulakan semula dengan kamera baru
+  if (cameraStream) {
+    cameraStream.getTracks().forEach(track => track.stop());
+    cameraStream = null;
+  }
+  camera.srcObject = null;
+  cameraActive = false;
+  flipCameraButton.hidden = true;
+  await startCameraFunction();
+  updateStatus(facingMode === "user"
+    ? "Kamera depan diaktifkan."
+    : "Kamera belakang diaktifkan.");
+}
+
 function stopCameraFunction() {
   if (cameraStream) {
     cameraStream.getTracks().forEach(track => {
@@ -332,21 +406,13 @@ function stopCameraFunction() {
     cameraStream = null;
   }
   camera.srcObject = null;
-  startCameraBtn.disabled = false;
-  stopCameraBtn.disabled = true;
-  captureImageBtn.disabled = true;
-  updateStatus("Kamera dihentikan.");
+  cameraActive = false;
+  cameraButton.textContent = "📷 Buka Kamera";
+  flipCameraButton.hidden = true;
 }
 
-// =========================================================
-// 8. AMBIL GAMBAR
-// =========================================================
 function captureImageFunction() {
-  if (!cameraStream) {
-    updateStatus("Sila mulakan kamera terlebih dahulu.");
-    return;
-  }
-  if (camera.videoWidth === 0) {
+  if (!cameraStream || camera.videoWidth === 0) {
     updateStatus("Kamera belum sedia. Cuba lagi sebentar.");
     return;
   }
@@ -358,9 +424,18 @@ function captureImageFunction() {
 
   const imageData = canvasInput.toDataURL("image/png");
   showCapturedImage(imageData);
-  updateStatus("Gambar pola berjaya diambil. Sedia untuk analisis.");
-
+  // Kamera dihentikan automatik selepas ambil gambar (jimat bateri)
+  stopCameraFunction();
+  updateStatus("Gambar pola berjaya diambil. Kamera dihentikan.");
   analyzePattern();
+}
+
+async function onCameraButtonClick() {
+  if (!cameraActive) {
+    await startCameraFunction();
+  } else {
+    captureImageFunction();
+  }
 }
 
 function showCapturedImage(dataUrl) {
@@ -456,9 +531,11 @@ function calibrateFunction() {
     calibrationStatus.textContent = "⚠️ Ambil gambar pola terlebih dahulu.";
     return;
   }
-  const targetCm = parseFloat(calibrationWidthInput.value);
+  const rawWidth = parseFloat(calibrationWidthInput.value);
+  // Nilai medan mengikut unit dipilih; tukar kepada cm untuk pengiraan
+  const targetCm = unitSelect.value === "in" ? rawWidth * 2.54 : rawWidth;
   if (isNaN(targetCm) || targetCm <= 0) {
-    calibrationStatus.textContent = "⚠️ Sila masukkan lebar kad dalam cm (contoh: 5.00).";
+    calibrationStatus.textContent = "⚠️ Sila masukkan lebar kad (contoh: 5.00).";
     return;
   }
 
@@ -591,9 +668,9 @@ function computeManualMeasurement() {
   const dy = manualPoints[1].y - manualPoints[0].y;
   const lengthPx = Math.sqrt(dx * dx + dy * dy);
   const cm = lengthPx * calibration.cmPerPixel;
-  patternMeasurement.textContent = `${cm.toFixed(1)} cm`;
+  patternMeasurement.textContent = fmtCm(cm);
   autoMeasure = { cm, lengthPx, ok: true };
-  updateStatus(`Ukur manual: ${lengthPx.toFixed(0)} px = ${cm.toFixed(1)} cm. Tekan ✅ Semak Ukuran Sekarang.`);
+  updateStatus(`Ukur manual: ${lengthPx.toFixed(0)} px = ${fmtCm(cm)}. Tekan ✅ Semak Ukuran Sekarang.`);
   updateCheckButtons();
 }
 
@@ -680,8 +757,8 @@ function autoMeasureFunction() {
   const cm = longest * calibration.cmPerPixel;
   autoMeasure = { cm, lengthPx: longest, ok: true };
   lineStatus.textContent = "Garisan dikesan";
-  patternMeasurement.textContent = `${cm.toFixed(1)} cm`;
-  updateStatus(`Ukur automatik: garisan terpanjang ${longest} px ≈ ${cm.toFixed(1)} cm. Tekan ✅ Semak Ukuran Sekarang.`);
+  patternMeasurement.textContent = fmtCm(cm);
+  updateStatus(`Ukur automatik: garisan terpanjang ${longest} px ≈ ${fmtCm(cm)}. Tekan ✅ Semak Ukuran Sekarang.`);
   updateCheckButtons();
 }
 
@@ -776,15 +853,15 @@ function renderCheckTable() {
     tdLabel.setAttribute("data-label", "Ukuran");
 
     const tdTarget = document.createElement("td");
-    tdTarget.textContent = `${check.target.toFixed(1)} cm`;
+    tdTarget.textContent = fmtCm(check.target);
     tdTarget.setAttribute("data-label", "Sasaran");
 
     const tdMeasured = document.createElement("td");
-    tdMeasured.textContent = `${check.measured.toFixed(1)} cm`;
+    tdMeasured.textContent = fmtCm(check.measured);
     tdMeasured.setAttribute("data-label", "Ukuran Pola");
 
     const tdDiff = document.createElement("td");
-    tdDiff.textContent = `${check.diff >= 0 ? "+" : ""}${check.diff.toFixed(1)} cm`;
+    tdDiff.textContent = fmtDiff(check.diff);
     tdDiff.setAttribute("data-label", "Beza");
 
     const tdResult = document.createElement("td");
@@ -806,7 +883,7 @@ function renderResult(pass, measured, target, diff, label) {
     resultTitle.textContent = "🟢 LULUS";
     resultTitle.className = "result-pass";
     resultMessage.textContent =
-      `${label}: ukuran pola ${measured.toFixed(1)} cm berada dalam toleransi sasaran ${target.toFixed(1)} cm (beza ${diff >= 0 ? "+" : ""}${diff.toFixed(1)} cm).`;
+      `${label}: ukuran pola ${fmtCm(measured)} berada dalam toleransi sasaran ${fmtCm(target)} (beza ${fmtDiff(diff)}).`;
   } else {
     resultTitle.textContent = "🔴 PERLU PEMBETULAN";
     resultTitle.className = "result-fail";
@@ -814,7 +891,7 @@ function renderResult(pass, measured, target, diff, label) {
       ? "Kurangkan ukuran pola."
       : "Tambahkan ukuran pola.";
     resultMessage.textContent =
-      `${label}: sasaran ${target.toFixed(1)} cm, ukuran pola ${measured.toFixed(1)} cm (beza ${diff >= 0 ? "+" : ""}${diff.toFixed(1)} cm). ${advice}`;
+      `${label}: sasaran ${fmtCm(target)}, ukuran pola ${fmtCm(measured)} (beza ${fmtDiff(diff)}). ${advice}`;
   }
 }
 
@@ -885,8 +962,8 @@ function renderPassport() {
       line.className = "passport-line";
       line.innerHTML =
         `${check.pass ? "🟢" : "🔴"} <strong>${check.label}</strong>: ` +
-        `${check.measured.toFixed(1)} cm (sasaran ${check.target.toFixed(1)} cm, ` +
-        `beza ${check.diff >= 0 ? "+" : ""}${check.diff.toFixed(1)} cm) — ` +
+        `${fmtCm(check.measured)} (sasaran ${fmtCm(check.target)}, ` +
+        `beza ${fmtDiff(check.diff)}) — ` +
         (check.pass ? "LULUS" : "PERLU PEMBETULAN");
       item.appendChild(line);
     }
@@ -904,8 +981,17 @@ function clearPassportFunction() {
 // 15. EVENT
 // =========================================================
 saveMeasurementsBtn.addEventListener("click", saveMeasurementsFunction);
+
+// Tukar unit: nilai ditaip ditukar automatik + simbol medan dikemas kini
+let previousUnit = unitSelect.value;
 unitSelect.addEventListener("change", () => {
-  reflectMeasurementsToInputs();
+  convertInputValues(previousUnit, unitSelect.value);
+  previousUnit = unitSelect.value;
+  updateUnitLabels();
+  // Papar semula semua nilai dalam unit baharu
+  refreshTargetInfo();
+  renderCheckTable();
+  renderPassport();
 });
 
 garmentType.addEventListener("change", () => {
@@ -919,9 +1005,8 @@ patternPart.addEventListener("change", () => {
   refreshTargetInfo();
 });
 
-startCameraBtn.addEventListener("click", startCameraFunction);
-stopCameraBtn.addEventListener("click", stopCameraFunction);
-captureImageBtn.addEventListener("click", captureImageFunction);
+cameraButton.addEventListener("click", onCameraButtonClick);
+flipCameraButton.addEventListener("click", flipCameraFunction);
 
 calibrateButton.addEventListener("click", calibrateFunction);
 capturedImage.addEventListener("click", onCapturedImageClick);
@@ -936,6 +1021,7 @@ clearPassportButton.addEventListener("click", clearPassportFunction);
 // 16. INITIAL STATUS
 // =========================================================
 updateStatus("Kamera belum diaktifkan.");
+updateUnitLabels();
 loadSavedMeasurements();
 populatePatternParts();
 renderPassport();
