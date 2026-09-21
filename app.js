@@ -1,39 +1,71 @@
 document.addEventListener("DOMContentLoaded", () => {
 
     // =========================================================
-    // SMART-POLA V3.1
-    // Noise Reduction + Continuous Pattern Line Detection
+    // SMART-POLA V4
+    // Camera + Pattern Line Detection + Measurement + Status
+    // Diselaraskan dengan index.html semasa
     // =========================================================
-
-    const garmentType = document.getElementById("garmentType");
-    const patternPart = document.getElementById("patternPart");
-    const patternSelectionStatus = document.getElementById("patternSelectionStatus");
-
-    const unitSelect = document.getElementById("unit");
-
-    const startCameraBtn = document.getElementById("startCameraBtn");
-    const stopCameraBtn = document.getElementById("stopCameraBtn");
-
-    const camera = document.getElementById("camera");
-    const overlayCanvas = document.getElementById("overlayCanvas");
-
-    const cameraStatus = document.getElementById("cameraStatus");
-    const detectionStatus = document.getElementById("detectionStatus");
-
-    const analyzeBtn = document.getElementById("analyzeBtn");
-
-    const resultTitle = document.getElementById("resultTitle");
-    const resultMessage = document.getElementById("resultMessage");
-    const measuredValue = document.getElementById("measuredValue");
-    const expectedValue = document.getElementById("expectedValue");
-    const differenceValue = document.getElementById("differenceValue");
 
 
     // =========================================================
-    // 1. PILIHAN BAHAGIAN POLA
+    // 1. ELEMENT HTML
+    // =========================================================
+
+    const garmentType =
+        document.getElementById("garmentType");
+
+    const patternPart =
+        document.getElementById("patternPart");
+
+    const patternSelectionStatus =
+        document.getElementById("patternSelectionStatus");
+
+    const unitSelect =
+        document.getElementById("unit");
+
+    const saveMeasurements =
+        document.getElementById("saveMeasurements");
+
+    const measurementStatus =
+        document.getElementById("measurementStatus");
+
+    const startCameraBtn =
+        document.getElementById("startCamera");
+
+    const stopCameraBtn =
+        document.getElementById("stopCamera");
+
+    const camera =
+        document.getElementById("camera");
+
+    const overlayCanvas =
+        document.getElementById("overlayCanvas");
+
+    const cameraStatus =
+        document.getElementById("status");
+
+    const lineStatus =
+        document.getElementById("lineStatus");
+
+    const patternMeasurement =
+        document.getElementById("patternMeasurement");
+
+    const formulaStatus =
+        document.getElementById("formulaStatus");
+
+    const resultTitle =
+        document.getElementById("resultTitle");
+
+    const resultMessage =
+        document.getElementById("resultMessage");
+
+
+    // =========================================================
+    // 2. PILIHAN BAHAGIAN POLA
     // =========================================================
 
     const patternOptions = {
+
         baju: [
             "Badan Hadapan",
             "Badan Belakang",
@@ -62,16 +94,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function updatePatternParts() {
 
-        const selected = garmentType.value;
+        const selected =
+            garmentType.value;
 
         patternPart.innerHTML = "";
 
-        const firstOption = document.createElement("option");
+        const firstOption =
+            document.createElement("option");
 
         firstOption.value = "";
-        firstOption.textContent = "-- Pilih bahagian pola --";
+        firstOption.textContent =
+            "-- Pilih bahagian pola --";
 
         patternPart.appendChild(firstOption);
+
 
         if (!selected) {
 
@@ -81,11 +117,15 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
-        const parts = patternOptions[selected] || [];
+
+        const parts =
+            patternOptions[selected] || [];
+
 
         parts.forEach((part) => {
 
-            const option = document.createElement("option");
+            const option =
+                document.createElement("option");
 
             option.value = part;
             option.textContent = part;
@@ -93,49 +133,135 @@ document.addEventListener("DOMContentLoaded", () => {
             patternPart.appendChild(option);
         });
 
+
         patternSelectionStatus.textContent =
             "Sila pilih bahagian pola.";
     }
 
 
-    garmentType.addEventListener("change", updatePatternParts);
+    garmentType.addEventListener(
+        "change",
+        updatePatternParts
+    );
 
 
-    patternPart.addEventListener("change", () => {
+    patternPart.addEventListener(
+        "change",
+        () => {
 
-        if (patternPart.value) {
+            if (patternPart.value) {
 
-            patternSelectionStatus.textContent =
-                "Bahagian pola dipilih: " + patternPart.value;
+                patternSelectionStatus.textContent =
+                    "Bahagian pola dipilih: " +
+                    patternPart.value;
 
-        } else {
+            } else {
 
-            patternSelectionStatus.textContent =
-                "Sila pilih bahagian pola.";
+                patternSelectionStatus.textContent =
+                    "Sila pilih bahagian pola.";
+            }
         }
-    });
+    );
 
 
     // =========================================================
-    // 2. UNIT
+    // 3. UNIT UKURAN
     // =========================================================
 
-    unitSelect.addEventListener("change", () => {
+    unitSelect.addEventListener(
+        "change",
+        () => {
 
-        document.querySelectorAll(".unit-label").forEach((label) => {
+            document
+                .querySelectorAll(".unit-label")
+                .forEach((label) => {
 
-            label.textContent = unitSelect.value;
+                    label.textContent =
+                        unitSelect.value;
 
-        });
-
-    });
+                });
+        }
+    );
 
 
     // =========================================================
-    // 3. CAMERA
+    // 4. SIMPAN UKURAN
+    // =========================================================
+
+    saveMeasurements.addEventListener(
+        "click",
+        () => {
+
+            const measurements = {
+
+                shoulder:
+                    document.getElementById("shoulder").value,
+
+                chest:
+                    document.getElementById("chest").value,
+
+                waist:
+                    document.getElementById("waist").value,
+
+                hip:
+                    document.getElementById("hip").value,
+
+                neck:
+                    document.getElementById("neck").value,
+
+                backLength:
+                    document.getElementById("backLength").value,
+
+                unit:
+                    unitSelect.value
+            };
+
+
+            const values = [
+                measurements.shoulder,
+                measurements.chest,
+                measurements.waist,
+                measurements.hip,
+                measurements.neck,
+                measurements.backLength
+            ];
+
+
+            const incomplete =
+                values.some(
+                    value =>
+                        value === "" ||
+                        Number(value) <= 0
+                );
+
+
+            if (incomplete) {
+
+                measurementStatus.textContent =
+                    "Sila lengkapkan semua ukuran badan.";
+
+                return;
+            }
+
+
+            localStorage.setItem(
+                "smartPolaMeasurements",
+                JSON.stringify(measurements)
+            );
+
+
+            measurementStatus.textContent =
+                "✓ Ukuran badan berjaya disimpan.";
+        }
+    );
+
+
+    // =========================================================
+    // 5. CAMERA
     // =========================================================
 
     let cameraStream = null;
+
     let animationFrame = null;
 
     let currentPattern = null;
@@ -145,12 +271,31 @@ document.addEventListener("DOMContentLoaded", () => {
     const SCAN_INTERVAL = 100;
 
 
+    // Canvas pemprosesan dalaman
+    const processingCanvas =
+        document.createElement("canvas");
+
+    const processingCtx =
+        processingCanvas.getContext(
+            "2d",
+            {
+                willReadFrequently: true
+            }
+        );
+
+
+    // =========================================================
+    // 6. MULAKAN CAMERA
+    // =========================================================
+
     async function startCamera() {
 
         try {
 
-            if (!navigator.mediaDevices ||
-                !navigator.mediaDevices.getUserMedia) {
+            if (
+                !navigator.mediaDevices ||
+                !navigator.mediaDevices.getUserMedia
+            ) {
 
                 cameraStatus.textContent =
                     "Pelayar tidak menyokong akses kamera.";
@@ -160,27 +305,31 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
             cameraStream =
-                await navigator.mediaDevices.getUserMedia({
+                await navigator.mediaDevices
+                    .getUserMedia({
 
-                    video: {
-                        facingMode: {
-                            ideal: "environment"
+                        video: {
+
+                            facingMode: {
+                                ideal: "environment"
+                            },
+
+                            width: {
+                                ideal: 1280
+                            },
+
+                            height: {
+                                ideal: 720
+                            }
                         },
 
-                        width: {
-                            ideal: 1280
-                        },
-
-                        height: {
-                            ideal: 720
-                        }
-                    },
-
-                    audio: false
-                });
+                        audio: false
+                    });
 
 
-            camera.srcObject = cameraStream;
+            camera.srcObject =
+                cameraStream;
+
 
             await camera.play();
 
@@ -189,7 +338,20 @@ document.addEventListener("DOMContentLoaded", () => {
                 "Kamera sedang aktif.";
 
             startCameraBtn.disabled = true;
+
             stopCameraBtn.disabled = false;
+
+
+            lineStatus.textContent =
+                "Mengesan garisan...";
+
+
+            resultTitle.textContent =
+                "Imbasan sedang dijalankan";
+
+
+            resultMessage.textContent =
+                "Halakan kamera pada pola.";
 
 
             startPatternScan();
@@ -200,18 +362,25 @@ document.addEventListener("DOMContentLoaded", () => {
 
             cameraStatus.textContent =
                 "Kamera tidak dapat dibuka. Sila benarkan akses kamera.";
-
         }
     }
 
+
+    // =========================================================
+    // 7. HENTIKAN CAMERA
+    // =========================================================
 
     function stopCamera() {
 
         if (cameraStream) {
 
-            cameraStream.getTracks().forEach((track) => {
-                track.stop();
-            });
+            cameraStream
+                .getTracks()
+                .forEach((track) => {
+
+                    track.stop();
+
+                });
 
             cameraStream = null;
         }
@@ -219,7 +388,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (animationFrame) {
 
-            cancelAnimationFrame(animationFrame);
+            cancelAnimationFrame(
+                animationFrame
+            );
 
             animationFrame = null;
         }
@@ -230,6 +401,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const ctx =
             overlayCanvas.getContext("2d");
+
 
         ctx.clearRect(
             0,
@@ -245,11 +417,18 @@ document.addEventListener("DOMContentLoaded", () => {
         cameraStatus.textContent =
             "Kamera dihentikan.";
 
-        detectionStatus.textContent =
-            "Pengesanan pola tidak aktif.";
+        lineStatus.textContent =
+            "Belum dianalisis";
+
+        patternMeasurement.textContent =
+            "Menunggu imbasan";
+
+        formulaStatus.textContent =
+            "Belum tersedia";
 
 
         startCameraBtn.disabled = false;
+
         stopCameraBtn.disabled = true;
     }
 
@@ -267,35 +446,61 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     // =========================================================
-    // 4. HELPER: BLUR
+    // 8. BLUR
     // =========================================================
 
-    function blurImage(gray, width, height) {
+    function blurImage(
+        gray,
+        width,
+        height
+    ) {
 
         const blurred =
-            new Float32Array(width * height);
+            new Float32Array(
+                width * height
+            );
 
 
-        for (let y = 1; y < height - 1; y++) {
+        for (
+            let y = 1;
+            y < height - 1;
+            y++
+        ) {
 
-            for (let x = 1; x < width - 1; x++) {
+            for (
+                let x = 1;
+                x < width - 1;
+                x++
+            ) {
 
                 let total = 0;
 
-                total += gray[(y - 1) * width + (x - 1)];
-                total += gray[(y - 1) * width + x];
-                total += gray[(y - 1) * width + (x + 1)];
 
-                total += gray[y * width + (x - 1)];
-                total += gray[y * width + x];
-                total += gray[y * width + (x + 1)];
+                for (
+                    let dy = -1;
+                    dy <= 1;
+                    dy++
+                ) {
 
-                total += gray[(y + 1) * width + (x - 1)];
-                total += gray[(y + 1) * width + x];
-                total += gray[(y + 1) * width + (x + 1)];
+                    for (
+                        let dx = -1;
+                        dx <= 1;
+                        dx++
+                    ) {
+
+                        total +=
+                            gray[
+                                (y + dy) *
+                                width +
+                                (x + dx)
+                            ];
+                    }
+                }
 
 
-                blurred[y * width + x] =
+                blurred[
+                    y * width + x
+                ] =
                     total / 9;
             }
         }
@@ -306,30 +511,56 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     // =========================================================
-    // 5. HELPER: EDGE DETECTION
+    // 9. EDGE DETECTION
     // =========================================================
 
-    function detectEdges(gray, width, height) {
+    function detectEdges(
+        gray,
+        width,
+        height
+    ) {
 
         const edges =
-            new Uint8Array(width * height);
+            new Uint8Array(
+                width * height
+            );
 
 
-        for (let y = 2; y < height - 2; y++) {
+        for (
+            let y = 2;
+            y < height - 2;
+            y++
+        ) {
 
-            for (let x = 2; x < width - 2; x++) {
+            for (
+                let x = 2;
+                x < width - 2;
+                x++
+            ) {
 
                 const left =
-                    gray[y * width + (x - 1)];
+                    gray[
+                        y * width +
+                        (x - 1)
+                    ];
 
                 const right =
-                    gray[y * width + (x + 1)];
+                    gray[
+                        y * width +
+                        (x + 1)
+                    ];
 
                 const top =
-                    gray[(y - 1) * width + x];
+                    gray[
+                        (y - 1) * width +
+                        x
+                    ];
 
                 const bottom =
-                    gray[(y + 1) * width + x];
+                    gray[
+                        (y + 1) * width +
+                        x
+                    ];
 
 
                 const gx =
@@ -341,16 +572,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 const magnitude =
                     Math.sqrt(
-                        (gx * gx) +
-                        (gy * gy)
+                        gx * gx +
+                        gy * gy
                     );
 
 
-                // Hanya ambil edge yang agak kuat
-                if (magnitude > 70) {
+                if (magnitude > 65) {
 
-                    edges[y * width + x] = 1;
-
+                    edges[
+                        y * width + x
+                    ] = 1;
                 }
             }
         }
@@ -361,97 +592,135 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     // =========================================================
-    // 6. FILTER NOISE
-    // Hanya kekalkan edge yang mempunyai sokongan
+    // 10. FILTER NOISE
     // =========================================================
 
-    function filterNoise(edges, width, height) {
+    function filterNoise(
+        edges,
+        width,
+        height
+    ) {
 
         const filtered =
-            new Uint8Array(width * height);
+            new Uint8Array(
+                width * height
+            );
 
 
-        for (let y = 3; y < height - 3; y++) {
+        for (
+            let y = 3;
+            y < height - 3;
+            y++
+        ) {
 
-            for (let x = 3; x < width - 3; x++) {
+            for (
+                let x = 3;
+                x < width - 3;
+                x++
+            ) {
 
                 const index =
                     y * width + x;
 
 
                 if (!edges[index]) {
+
                     continue;
                 }
 
 
                 let horizontal = 0;
+
                 let vertical = 0;
+
                 let diagonal1 = 0;
+
                 let diagonal2 = 0;
 
 
-                // Sokongan kiri/kanan
-                for (let d = 1; d <= 3; d++) {
+                for (
+                    let d = 1;
+                    d <= 3;
+                    d++
+                ) {
 
                     if (
-                        edges[y * width + (x - d)]
+                        edges[
+                            y * width +
+                            (x - d)
+                        ]
                     ) {
                         horizontal++;
                     }
 
                     if (
-                        edges[y * width + (x + d)]
+                        edges[
+                            y * width +
+                            (x + d)
+                        ]
                     ) {
                         horizontal++;
                     }
-                }
 
-
-                // Sokongan atas/bawah
-                for (let d = 1; d <= 3; d++) {
 
                     if (
-                        edges[(y - d) * width + x]
+                        edges[
+                            (y - d) *
+                            width +
+                            x
+                        ]
                     ) {
                         vertical++;
                     }
 
                     if (
-                        edges[(y + d) * width + x]
+                        edges[
+                            (y + d) *
+                            width +
+                            x
+                        ]
                     ) {
                         vertical++;
                     }
-                }
 
-
-                // Diagonal /
-                for (let d = 1; d <= 3; d++) {
 
                     if (
-                        edges[(y - d) * width + (x + d)]
+                        edges[
+                            (y - d) *
+                            width +
+                            (x + d)
+                        ]
                     ) {
                         diagonal1++;
                     }
 
                     if (
-                        edges[(y + d) * width + (x - d)]
+                        edges[
+                            (y + d) *
+                            width +
+                            (x - d)
+                        ]
                     ) {
                         diagonal1++;
                     }
-                }
 
-
-                // Diagonal \
-                for (let d = 1; d <= 3; d++) {
 
                     if (
-                        edges[(y - d) * width + (x - d)]
+                        edges[
+                            (y - d) *
+                            width +
+                            (x - d)
+                        ]
                     ) {
                         diagonal2++;
                     }
 
                     if (
-                        edges[(y + d) * width + (x + d)]
+                        edges[
+                            (y + d) *
+                            width +
+                            (x + d)
+                        ]
                     ) {
                         diagonal2++;
                     }
@@ -467,11 +736,9 @@ document.addEventListener("DOMContentLoaded", () => {
                     );
 
 
-                // Edge mesti mempunyai kesinambungan
                 if (strongest >= 3) {
 
                     filtered[index] = 1;
-
                 }
             }
         }
@@ -482,26 +749,35 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     // =========================================================
-    // 7. CARI KAWASAN POLA
+    // 11. CARI KAWASAN POLA
     // =========================================================
 
-    function findPatternRegion(edges, width, height) {
+    function findPatternRegion(
+        edges,
+        width,
+        height
+    ) {
 
         let minX = width;
+
         let minY = height;
 
         let maxX = 0;
+
         let maxY = 0;
 
         let count = 0;
 
 
-        // Abaikan kawasan tepi kamera
         const marginX =
-            Math.floor(width * 0.05);
+            Math.floor(
+                width * 0.05
+            );
 
         const marginY =
-            Math.floor(height * 0.05);
+            Math.floor(
+                height * 0.05
+            );
 
 
         for (
@@ -517,17 +793,25 @@ document.addEventListener("DOMContentLoaded", () => {
             ) {
 
                 if (
-                    edges[y * width + x] === 1
+                    edges[
+                        y * width + x
+                    ] === 1
                 ) {
 
                     count++;
 
 
-                    if (x < minX) minX = x;
-                    if (x > maxX) maxX = x;
+                    if (x < minX)
+                        minX = x;
 
-                    if (y < minY) minY = y;
-                    if (y > maxY) maxY = y;
+                    if (x > maxX)
+                        maxX = x;
+
+                    if (y < minY)
+                        minY = y;
+
+                    if (y > maxY)
+                        maxY = y;
                 }
             }
         }
@@ -546,7 +830,6 @@ document.addEventListener("DOMContentLoaded", () => {
             maxY - minY;
 
 
-        // Tolak kawasan yang terlalu kecil
         if (
             boxWidth < width * 0.12 ||
             boxHeight < height * 0.12
@@ -557,19 +840,24 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
         return {
+
             minX,
             minY,
+
             maxX,
             maxY,
+
             width: boxWidth,
+
             height: boxHeight,
+
             count
         };
     }
 
 
     // =========================================================
-    // 8. PAPARKAN GARIS SAHAJA
+    // 12. LUKIS GARIS POLA
     // =========================================================
 
     function drawDetectedLines(
@@ -590,14 +878,8 @@ document.addEventListener("DOMContentLoaded", () => {
         );
 
 
-        /*
-         * Kita TIDAK lukis semua pixel edge.
-         * Hanya lukis setiap beberapa pixel.
-         * Ini kurangkan efek "semut berjalan".
-         */
-
         ctx.strokeStyle =
-            "rgba(0, 255, 120, 0.85)";
+            "rgba(0,255,120,0.85)";
 
         ctx.lineWidth = 3;
 
@@ -623,7 +905,9 @@ document.addEventListener("DOMContentLoaded", () => {
             ) {
 
                 const detected =
-                    edges[y * width + x] === 1;
+                    edges[
+                        y * width + x
+                    ] === 1;
 
 
                 if (
@@ -632,12 +916,12 @@ document.addEventListener("DOMContentLoaded", () => {
                 ) {
 
                     runStart = x;
-
                 }
 
 
                 const endOfRun =
-                    (!detected || x === region.maxX);
+                    !detected ||
+                    x === region.maxX;
 
 
                 if (
@@ -652,22 +936,25 @@ document.addEventListener("DOMContentLoaded", () => {
                             : x - 1;
 
 
-                    // Hanya lukis garisan yang cukup panjang
                     if (
-                        runEnd - runStart >= 4
+                        runEnd -
+                        runStart >= 4
                     ) {
 
                         ctx.beginPath();
+
 
                         ctx.moveTo(
                             runStart * scaleX,
                             y * scaleY
                         );
 
+
                         ctx.lineTo(
                             runEnd * scaleX,
                             y * scaleY
                         );
+
 
                         ctx.stroke();
                     }
@@ -681,7 +968,74 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     // =========================================================
-    // 9. CAMERA SCAN
+    // 13. ANALISIS AUTOMATIK
+    // =========================================================
+
+    function updateAnalysis(
+        region,
+        scaleX,
+        scaleY
+    ) {
+
+        if (!region) {
+
+            lineStatus.textContent =
+                "Garisan belum dikesan";
+
+            patternMeasurement.textContent =
+                "Menunggu imbasan";
+
+            formulaStatus.textContent =
+                "Belum tersedia";
+
+            return;
+        }
+
+
+        const widthPx =
+            region.width * scaleX;
+
+        const heightPx =
+            region.height * scaleY;
+
+
+        currentPattern = {
+
+            pixelWidth: widthPx,
+
+            pixelHeight: heightPx,
+
+            detectedPixels:
+                region.count
+        };
+
+
+        lineStatus.textContent =
+            "✓ Garisan pola dikesan";
+
+
+        patternMeasurement.textContent =
+            Math.round(widthPx) +
+            " px × " +
+            Math.round(heightPx) +
+            " px";
+
+
+        formulaStatus.textContent =
+            "Menunggu formula pola";
+
+
+        resultTitle.textContent =
+            "Pola berjaya diimbas";
+
+
+        resultMessage.textContent =
+            "Kawasan pola telah dikenal pasti. Semakan formula ukuran akan disambungkan ke modul seterusnya.";
+    }
+
+
+    // =========================================================
+    // 14. CAMERA SCAN
     // =========================================================
 
     function startPatternScan() {
@@ -690,29 +1044,23 @@ document.addEventListener("DOMContentLoaded", () => {
             overlayCanvas.getContext("2d");
 
 
-        const processingCanvas =
-            document.createElement("canvas");
-
-
-        const processingCtx =
-            processingCanvas.getContext("2d", {
-                willReadFrequently: true
-            });
-
-
         function scan(timestamp) {
 
             if (!cameraStream) {
+
                 return;
             }
 
 
             animationFrame =
-                requestAnimationFrame(scan);
+                requestAnimationFrame(
+                    scan
+                );
 
 
             if (
-                timestamp - lastScanTime <
+                timestamp -
+                lastScanTime <
                 SCAN_INTERVAL
             ) {
 
@@ -720,7 +1068,8 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
 
-            lastScanTime = timestamp;
+            lastScanTime =
+                timestamp;
 
 
             if (
@@ -732,24 +1081,29 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
 
-            // Kurangkan saiz untuk pemprosesan lebih ringan
+            // Resolusi pemprosesan rendah
             const scale = 0.25;
 
 
             const width =
                 Math.floor(
-                    camera.videoWidth * scale
+                    camera.videoWidth *
+                    scale
                 );
 
 
             const height =
                 Math.floor(
-                    camera.videoHeight * scale
+                    camera.videoHeight *
+                    scale
                 );
 
 
-            processingCanvas.width = width;
-            processingCanvas.height = height;
+            processingCanvas.width =
+                width;
+
+            processingCanvas.height =
+                height;
 
 
             overlayCanvas.width =
@@ -781,10 +1135,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 imageData.data;
 
 
-            // =================================================
-            // Tukar kepada grayscale
-            // =================================================
-
+            // Grayscale
             const gray =
                 new Float32Array(
                     width * height
@@ -798,18 +1149,13 @@ document.addEventListener("DOMContentLoaded", () => {
             ) {
 
                 gray[i] =
-                    (
-                        pixels[p] * 0.299 +
-                        pixels[p + 1] * 0.587 +
-                        pixels[p + 2] * 0.114
-                    );
+                    pixels[p] * 0.299 +
+                    pixels[p + 1] * 0.587 +
+                    pixels[p + 2] * 0.114;
             }
 
 
-            // =================================================
-            // Blur untuk kurangkan noise
-            // =================================================
-
+            // Blur
             const blurred =
                 blurImage(
                     gray,
@@ -818,10 +1164,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 );
 
 
-            // =================================================
-            // Cari edge
-            // =================================================
-
+            // Edge
             const edges =
                 detectEdges(
                     blurred,
@@ -830,10 +1173,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 );
 
 
-            // =================================================
-            // Tapis edge yang isolated
-            // =================================================
-
+            // Noise filter
             const filtered =
                 filterNoise(
                     edges,
@@ -842,10 +1182,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 );
 
 
-            // =================================================
-            // Cari kawasan pola
-            // =================================================
-
+            // Cari pola
             const region =
                 findPatternRegion(
                     filtered,
@@ -854,28 +1191,17 @@ document.addEventListener("DOMContentLoaded", () => {
                 );
 
 
-            ctx.clearRect(
-                0,
-                0,
-                overlayCanvas.width,
-                overlayCanvas.height
-            );
-
-
-            // =================================================
-            // JIKA POLA DIKESAN
-            // =================================================
-
             if (region) {
 
                 const scaleX =
-                    camera.videoWidth / width;
+                    camera.videoWidth /
+                    width;
 
                 const scaleY =
-                    camera.videoHeight / height;
+                    camera.videoHeight /
+                    height;
 
 
-                // Lukis garisan yang lebih bersih
                 drawDetectedLines(
                     ctx,
                     filtered,
@@ -887,18 +1213,22 @@ document.addEventListener("DOMContentLoaded", () => {
                 );
 
 
-                // Kotak kawasan pola
+                // Kotak pola
                 const boxX =
-                    region.minX * scaleX;
+                    region.minX *
+                    scaleX;
 
                 const boxY =
-                    region.minY * scaleY;
+                    region.minY *
+                    scaleY;
 
                 const boxWidth =
-                    region.width * scaleX;
+                    region.width *
+                    scaleX;
 
                 const boxHeight =
-                    region.height * scaleY;
+                    region.height *
+                    scaleY;
 
 
                 ctx.strokeStyle =
@@ -919,10 +1249,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 // Titik tengah
                 const centerX =
-                    boxX + boxWidth / 2;
+                    boxX +
+                    boxWidth / 2;
 
                 const centerY =
-                    boxY + boxHeight / 2;
+                    boxY +
+                    boxHeight / 2;
 
 
                 ctx.beginPath();
@@ -942,113 +1274,53 @@ document.addEventListener("DOMContentLoaded", () => {
                 ctx.fill();
 
 
-                // Simpan ukuran pixel
-                currentPattern = {
-
-                    pixelWidth: boxWidth,
-
-                    pixelHeight: boxHeight,
-
-                    detectedPixels:
-                        region.count
-                };
+                updateAnalysis(
+                    region,
+                    scaleX,
+                    scaleY
+                );
 
 
-                detectionStatus.textContent =
-                    "Pola dikesan — garisan pola dikenal pasti.";
+                cameraStatus.textContent =
+                    "Kamera sedang aktif — pola dikesan.";
 
 
             } else {
 
+                ctx.clearRect(
+                    0,
+                    0,
+                    overlayCanvas.width,
+                    overlayCanvas.height
+                );
+
+
                 currentPattern = null;
 
 
-                detectionStatus.textContent =
-                    "Halakan kamera pada pola sehingga garisan pola dikesan.";
+                lineStatus.textContent =
+                    "Mengesan garisan...";
+
+
+                patternMeasurement.textContent =
+                    "Menunggu imbasan";
+
+
+                cameraStatus.textContent =
+                    "Kamera aktif — halakan pada pola.";
             }
         }
 
 
         animationFrame =
-            requestAnimationFrame(scan);
+            requestAnimationFrame(
+                scan
+            );
     }
 
 
     // =========================================================
-    // 10. ANALISIS
-    // =========================================================
-
-    analyzeBtn.addEventListener(
-        "click",
-        () => {
-
-            if (!garmentType.value) {
-
-                resultTitle.textContent =
-                    "Maklumat belum lengkap";
-
-                resultMessage.textContent =
-                    "Sila pilih jenis pakaian.";
-
-                return;
-            }
-
-
-            if (!patternPart.value) {
-
-                resultTitle.textContent =
-                    "Maklumat belum lengkap";
-
-                resultMessage.textContent =
-                    "Sila pilih bahagian pola.";
-
-                return;
-            }
-
-
-            if (!currentPattern) {
-
-                resultTitle.textContent =
-                    "Pola belum dikesan";
-
-                resultMessage.textContent =
-                    "Sila buka kamera dan halakan pada pola terlebih dahulu.";
-
-                return;
-            }
-
-
-            const widthPx =
-                currentPattern.pixelWidth;
-
-            const heightPx =
-                currentPattern.pixelHeight;
-
-
-            measuredValue.textContent =
-                `${Math.round(widthPx)} px × ${Math.round(heightPx)} px`;
-
-
-            expectedValue.textContent =
-                "Belum ditetapkan";
-
-
-            differenceValue.textContent =
-                "Belum dikira";
-
-
-            resultTitle.textContent =
-                "Pola berjaya diimbas";
-
-
-            resultMessage.textContent =
-                "SMART-POLA telah mengenal pasti kawasan pola dan mendapatkan ukuran awal. Formula berdasarkan ukuran badan akan disambungkan pada langkah seterusnya.";
-        }
-    );
-
-
-    // =========================================================
-    // 11. STATUS AWAL
+    // 15. STATUS AWAL
     // =========================================================
 
     patternSelectionStatus.textContent =
@@ -1057,9 +1329,92 @@ document.addEventListener("DOMContentLoaded", () => {
     cameraStatus.textContent =
         "Kamera belum diaktifkan.";
 
-    detectionStatus.textContent =
-        "Pengesanan pola tidak aktif.";
+    lineStatus.textContent =
+        "Belum dianalisis";
+
+    patternMeasurement.textContent =
+        "Menunggu imbasan";
+
+    formulaStatus.textContent =
+        "Belum tersedia";
 
     stopCameraBtn.disabled = true;
+
+
+    // =========================================================
+    // 16. LOAD UKURAN YANG PERNAH DISIMPAN
+    // =========================================================
+
+    const saved =
+        localStorage.getItem(
+            "smartPolaMeasurements"
+        );
+
+
+    if (saved) {
+
+        try {
+
+            const measurements =
+                JSON.parse(saved);
+
+
+            const fields = [
+                "shoulder",
+                "chest",
+                "waist",
+                "hip",
+                "neck",
+                "backLength"
+            ];
+
+
+            fields.forEach((field) => {
+
+                const element =
+                    document.getElementById(
+                        field
+                    );
+
+
+                if (
+                    element &&
+                    measurements[field]
+                ) {
+
+                    element.value =
+                        measurements[field];
+                }
+            });
+
+
+            if (measurements.unit) {
+
+                unitSelect.value =
+                    measurements.unit;
+
+
+                document
+                    .querySelectorAll(
+                        ".unit-label"
+                    )
+                    .forEach((label) => {
+
+                        label.textContent =
+                            measurements.unit;
+                    });
+            }
+
+
+            measurementStatus.textContent =
+                "Ukuran terdahulu dimuatkan.";
+
+        } catch (error) {
+
+            console.log(
+                "Tiada data ukuran terdahulu."
+            );
+        }
+    }
 
 });
