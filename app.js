@@ -1,8 +1,9 @@
 // =========================================================
-// SMART-POLA V4.1
+// SMART-POLA V4.1.2
 // Pengesanan garisan pola SEBENAR (Sobel + komponen bersambung),
-// penentukuran kad hitam, ukur manual 2 titik & automatik,
-// semakan multi-baris + Passport + PWA-ready
+// multi-keping + nama keping + label dimensi, penentukuran kad
+// hitam, ukur manual 2 titik & automatik, semakan multi-baris,
+// Passport. Overlay analisis dipaparkan di ATAS GAMBAR CAPTURED.
 // =========================================================
 
 // =========================================================
@@ -27,6 +28,7 @@ const targetInfo = document.getElementById("targetInfo");
 const patternSelectionStatus = document.getElementById("patternSelectionStatus");
 
 const camera = document.getElementById("camera");
+const cameraContainer = document.getElementById("cameraContainer");
 const canvasInput = document.getElementById("canvasInput");
 const overlayCanvas = document.getElementById("overlayCanvas");
 const cameraButton = document.getElementById("cameraButton");
@@ -73,21 +75,21 @@ const clearPassportButton = document.getElementById("clearPassportButton");
 // 2. VARIABLES
 // =========================================================
 let cameraStream = null;
-let cameraActive = false;     // true semasa kamera hidup
+let cameraActive = false;       // true semasa kamera hidup
 let facingMode = "environment"; // "environment" = belakang, "user" = depan
-let measurements = null;      // cm: { shoulder, chest, waist, hip, neck, backLength, labuhSkirt }
-let calibration = null;       // { cmPerPixel }
+let measurements = null;        // cm
+let calibration = null;         // { cmPerPixel }
 let captured = false;
-let manualPoints = [];        // [{x, y}, {x, y}] titik klik pengguna
-let lastChecks = [];          // baris semakan semasa (belum disimpan)
-let visionResult = null;      // hasil analisis visi: { edges, w, h, pieces, scaleBack }
-let selectedPiece = 0;        // indeks keping pola dipilih (multi-piece)
-let sensitivity = 5;          // kepekaan pengesanan 1-10
+let manualPoints = [];          // [{x, y}, {x, y}]
+let lastChecks = [];            // baris semakan semasa
+let autoMeasure = null;         // { cm, lengthPx, ok, source }
+let visionResult = null;        // { edges, w, h, pieces, scaleBack }
+let selectedPiece = 0;
+let sensitivity = 5;            // 1-10
 let sensitivityTimer = null;
-let pieceNames = {};          // { "0": "Depan", "1": "Lengan" } ikut indeks keping
+let pieceNames = {};            // { "0": "Depan", ... } ikut indeks keping
 const PIECE_COLORS = ["#22d3ee", "#f59e0b", "#a78bfa", "#34d399", "#f472b6", "#facc15"];
 
-// Senarai bahagian pola bagi setiap jenis pakaian
 const PATTERN_PARTS = {
   baju: [
     { value: "shoulder", label: "Lebar Bahu" },
@@ -116,7 +118,6 @@ const PATTERN_PARTS = {
   ]
 };
 
-// Bahagian yang sasarannya ¼ daripada ukuran keliling
 const QUARTER_PARTS = ["chest", "waist", "hip"];
 const TOLERANCE = 0.5; // cm
 
@@ -137,7 +138,6 @@ function updateStatus(message) {
   }
 }
 
-// Tukar simbol unit (cm/in) pada semua medan ukuran
 const unitLabels = document.querySelectorAll(".unit-label");
 function updateUnitLabels() {
   const label = unitSelect.value === "in" ? "in" : "cm";
@@ -150,7 +150,6 @@ function updateUnitLabels() {
   }
 }
 
-// ---- Paparan unit seragam: semua nilai dipaparkan dalam unit dipilih ----
 function getDisplayUnit() {
   return unitSelect.value === "in" ? "in" : "cm";
 }
@@ -168,7 +167,6 @@ function fmtDiff(diff) {
   return `${diff >= 0 ? "+" : ""}${cmToDisplay(diff).toFixed(decimals)} ${unit}`;
 }
 
-// Tukar nilai yang sudah ditaip apabila unit ditukar (cm <-> in)
 function convertInputValues(fromUnit, toUnit) {
   if (fromUnit === toUnit) return;
   const toCm = fromUnit === "in" ? 2.54 : 1;
@@ -181,13 +179,11 @@ function convertInputValues(fromUnit, toUnit) {
     if (isNaN(num) || num < 0) continue;
     input.value = Math.round(num * toCm * fromCm * 100) / 100;
   }
-  // Medan lebar kad penentukuran turut ditukar
-  const calib = calibrationWidthInput;
-  const calibRaw = calib.value.trim();
+  const calibRaw = calibrationWidthInput.value.trim();
   if (calibRaw !== "") {
     const calibNum = parseFloat(calibRaw);
     if (!isNaN(calibNum) && calibNum >= 0) {
-      calib.value = Math.round(calibNum * toCm * fromCm * 100) / 100;
+      calibrationWidthInput.value = Math.round(calibNum * toCm * fromCm * 100) / 100;
     }
   }
 }
@@ -225,27 +221,21 @@ function readMeasurementInputs() {
 function saveMeasurementsFunction() {
   const values = readMeasurementInputs();
   if (!values) {
-    measurementStatus.textContent =
-      "⚠️ Sila masukkan ukuran nombor yang sah.";
+    measurementStatus.textContent = "⚠️ Sila masukkan ukuran nombor yang sah.";
     return;
   }
   if (Object.values(values).every(v => v === null)) {
-    measurementStatus.textContent =
-      "⚠️ Sila isikan sekurang-kurangnya satu ukuran badan.";
+    measurementStatus.textContent = "⚠️ Sila isikan sekurang-kurangnya satu ukuran badan.";
     return;
   }
 
   measurements = values;
   try {
     localStorage.setItem(STORAGE_KEYS.measurements, JSON.stringify(measurements));
-  } catch (e) {
-    // localStorage mungkin tidak tersedia; teruskan tanpa simpanan
-  }
+  } catch (e) { /* teruskan */ }
 
   const filled = Object.values(values).filter(v => v !== null).length;
-  measurementStatus.textContent =
-    `🟢 ${filled} ukuran disimpan. Pilih bahagian pola untuk melihat sasaran.`;
-
+  measurementStatus.textContent = `🟢 ${filled} ukuran disimpan. Pilih bahagian pola untuk melihat sasaran.`;
   refreshTargetInfo();
 }
 
@@ -257,12 +247,9 @@ function loadSavedMeasurements() {
     if (!data || typeof data !== "object") return;
     measurements = data;
     reflectMeasurementsToInputs();
-    measurementStatus.textContent =
-      "🟢 Ukuran tersimpan dimuatkan daripada sesi sebelumnya.";
+    measurementStatus.textContent = "🟢 Ukuran tersimpan dimuatkan daripada sesi sebelumnya.";
     refreshTargetInfo();
-  } catch (e) {
-    // abaikan kerosakan data
-  }
+  } catch (e) { /* abaikan */ }
 }
 
 function reflectMeasurementsToInputs() {
@@ -272,8 +259,7 @@ function reflectMeasurementsToInputs() {
   for (const key of Object.keys(measurementInputs)) {
     const cm = measurements[key];
     if (cm !== null && cm !== undefined) {
-      const display = cm * factor;
-      measurementInputs[key].value = Math.round(display * 10) / 10;
+      measurementInputs[key].value = Math.round(cm * factor * 10) / 10;
     }
   }
 }
@@ -336,8 +322,7 @@ function refreshTargetInfo() {
   const targets = computeTargets();
   const cm = targets[part];
   if (cm === undefined) {
-    targetInfo.textContent =
-      "⚠️ Ukuran badan bagi bahagian ini belum diisi. Sila lengkapkan Seksyen 1.";
+    targetInfo.textContent = "⚠️ Ukuran badan bagi bahagian ini belum diisi. Sila lengkapkan Seksyen 1.";
     updateFormulaDetail(null);
     return;
   }
@@ -349,8 +334,7 @@ function refreshTargetInfo() {
     : `${partLabel} = ukuran badan = ${fmtCm(cm)} (toleransi ±${fmtCm(TOLERANCE)})`;
 
   targetInfo.innerHTML =
-    `🎯 <strong>Sasaran ${partLabel}:</strong> ${fmtCm(cm)} ` +
-    `(toleransi ±${fmtCm(TOLERANCE)})`;
+    `🎯 <strong>Sasaran ${partLabel}:</strong> ${fmtCm(cm)} (toleransi ±${fmtCm(TOLERANCE)})`;
   updateFormulaDetail(formulaText);
   updateCheckButtons();
 }
@@ -361,11 +345,7 @@ function getPartLabel(type, part) {
 }
 
 function updateFormulaDetail(text) {
-  if (text) {
-    formulaDetail.textContent = text;
-  } else {
-    formulaDetail.textContent = "Belum tersedia";
-  }
+  formulaDetail.textContent = text ? text : "Belum tersedia";
 }
 
 // =========================================================
@@ -374,10 +354,12 @@ function updateFormulaDetail(text) {
 async function startCameraFunction() {
   try {
     if (cameraButton) cameraButton.disabled = true;
+    // Papar semula kotak kamera & kosongkan overlay lama (elak hijau melekat)
+    if (cameraContainer) cameraContainer.style.display = "block";
+    clearOverlays();
+
     cameraStream = await navigator.mediaDevices.getUserMedia({
-      video: {
-        facingMode: { ideal: facingMode }
-      },
+      video: { facingMode: { ideal: facingMode } },
       audio: false
     });
     camera.srcObject = cameraStream;
@@ -399,9 +381,7 @@ async function startCameraFunction() {
 
 function stopCameraFunction() {
   if (cameraStream) {
-    cameraStream.getTracks().forEach(track => {
-      track.stop();
-    });
+    cameraStream.getTracks().forEach(track => track.stop());
     cameraStream = null;
   }
   camera.srcObject = null;
@@ -423,7 +403,6 @@ function captureImageFunction() {
 
   const imageData = canvasInput.toDataURL("image/png");
   showCapturedImage(imageData);
-  // Kamera dihentikan automatik selepas ambil gambar (jimat bateri)
   stopCameraFunction();
   updateStatus("Gambar pola berjaya diambil. Kamera dihentikan.");
   analyzePattern();
@@ -440,9 +419,7 @@ async function flipCameraFunction() {
   cameraActive = false;
   if (flipCameraButton) flipCameraButton.hidden = true;
   await startCameraFunction();
-  updateStatus(facingMode === "user"
-    ? "Kamera depan diaktifkan."
-    : "Kamera belakang diaktifkan.");
+  updateStatus(facingMode === "user" ? "Kamera depan diaktifkan." : "Kamera belakang diaktifkan.");
 }
 
 async function onCameraButtonClick() {
@@ -451,6 +428,13 @@ async function onCameraButtonClick() {
   } else {
     captureImageFunction();
   }
+}
+
+function clearOverlays() {
+  overlayCanvas.width = 0;
+  overlayCanvas.height = 0;
+  measureCanvas.width = 0;
+  measureCanvas.height = 0;
 }
 
 function showCapturedImage(dataUrl) {
@@ -465,31 +449,182 @@ function showCapturedImage(dataUrl) {
   pieceNames = {};
   try {
     localStorage.removeItem(STORAGE_KEYS.pieceNames);
-  } catch (e) {
-    // abaikan
-  }
+  } catch (e) { /* abaikan */ }
+  selectedPiece = 0;
   renderCheckTable();
-  overlayCanvas.width = 0;
-  overlayCanvas.height = 0;
-  measureCanvas.style.display = "block";
-  measureCanvas.width = 0;
-  measureCanvas.height = 0;
+  // Sembunyikan kotak kamera: analisis dipaparkan pada gambar di bawah
+  if (cameraContainer) cameraContainer.style.display = "none";
+  clearOverlays();
   lineStatus.textContent = "Belum dianalisis";
   patternMeasurement.textContent = "Menunggu imbasan";
   if (autoChips) autoChips.style.display = "none";
   if (pieceChips) pieceChips.style.display = "none";
+  if (pieceRename) pieceRename.style.display = "none";
   calibrateButton.disabled = false;
   updateCheckButtons();
 }
 
 // =========================================================
 // 9. VISI: PENGESANAN GARISAN POLA SEBENAR
-// Grayscale -> Gaussian blur -> Sobel -> ambang adaptif ->
-// penutupan morfologi -> komponen bersambung -> komponen pola
 // =========================================================
+function runVision() {
+  const width = canvasInput.width;
+  const height = canvasInput.height;
+  if (!width || !height) return null;
 
-// Penutupan morfologi ringkas: dilate 1 px kemudian erode 1 px
-// (menyambung garisan putus-putus)
+  const maxSide = 1400;
+  const scale = Math.min(1, maxSide / Math.max(width, height));
+  const w = Math.max(1, Math.round(width * scale));
+  const h = Math.max(1, Math.round(height * scale));
+
+  let srcData;
+  if (scale === 1) {
+    srcData = canvasInput.getContext("2d").getImageData(0, 0, w, h);
+  } else {
+    const tmp = document.createElement("canvas");
+    tmp.width = w;
+    tmp.height = h;
+    const tctx = tmp.getContext("2d");
+    tctx.drawImage(canvasInput, 0, 0, w, h);
+    srcData = tctx.getImageData(0, 0, w, h);
+  }
+
+  // Kawasan kad penentukuran dikeluarkan
+  const cardFull = detectBlackCard();
+  let cardBox = null;
+  if (cardFull) {
+    cardBox = {
+      minX: Math.max(0, Math.floor(cardFull.x0 * scale) - 10),
+      maxX: Math.min(w - 1, Math.ceil(cardFull.x1 * scale) + 10),
+      minY: Math.max(0, Math.floor(cardFull.top * scale) - 10),
+      maxY: Math.min(h - 1, Math.ceil(cardFull.bottom * scale) + 10)
+    };
+  }
+
+  const gray = new Float32Array(w * h);
+  {
+    const src = srcData.data;
+    for (let i = 0, p = 0; i < src.length; i += 4, p++) {
+      gray[p] = 0.299 * src[i] + 0.587 * src[i + 1] + 0.114 * src[i + 2];
+    }
+  }
+  // Blur dua laluan [1 2 1]
+  const tmpF = new Float32Array(w * h);
+  for (let y = 0; y < h; y++) {
+    const row = y * w;
+    for (let x = 0; x < w; x++) {
+      const a = gray[row + (x > 0 ? x - 1 : 0)];
+      const b = gray[row + x];
+      const c = gray[row + (x < w - 1 ? x + 1 : w - 1)];
+      tmpF[row + x] = (a + 2 * b + c) / 4;
+    }
+  }
+  for (let x = 0; x < w; x++) {
+    for (let y = 0; y < h; y++) {
+      const a = tmpF[(y > 0 ? y - 1 : 0) * w + x];
+      const b = tmpF[y * w + x];
+      const c = tmpF[(y < h - 1 ? y + 1 : h - 1) * w + x];
+      gray[y * w + x] = (a + 2 * b + c) / 4;
+    }
+  }
+
+  // Sobel + ambang adaptif (dikawal slider kepekaan)
+  const mag = new Float32Array(w * h);
+  let maxMag = 0;
+  for (let y = 1; y < h - 1; y++) {
+    for (let x = 1; x < w - 1; x++) {
+      const i = y * w + x;
+      const tl = gray[i - w - 1], t = gray[i - w], tr = gray[i - w + 1];
+      const l = gray[i - 1], r = gray[i + 1];
+      const bl = gray[i + w - 1], b = gray[i + w], br = gray[i + w + 1];
+      const gx = (tr + 2 * r + br) - (tl + 2 * l + bl);
+      const gy = (bl + 2 * b + br) - (tl + 2 * t + tr);
+      const m = gx * gx + gy * gy;
+      mag[i] = m;
+      if (m > maxMag) maxMag = m;
+    }
+  }
+  let edges = new Uint8Array(w * h);
+  if (maxMag > 0) {
+    const bins = 256;
+    const hist = new Uint32Array(bins);
+    const s = (bins - 1) / maxMag;
+    for (let i = 0; i < mag.length; i++) hist[(mag[i] * s) | 0]++;
+    // 1 = ketat (~4% tepi), 10 = longgar (~22% tepi)
+    const frac = 0.04 + (sensitivity - 1) * (0.18 / 9);
+    const target = Math.floor(w * h * frac);
+    let acc = 0, bin = bins - 1;
+    for (let b = 0; b < bins; b++) {
+      acc += hist[b];
+      if (acc >= target) { bin = b; break; }
+    }
+    const thr = bin / s;
+    for (let i = 0; i < mag.length; i++) {
+      if (mag[i] >= thr) edges[i] = 1;
+    }
+    if (cardBox) {
+      for (let y = cardBox.minY; y <= cardBox.maxY; y++) {
+        for (let x = cardBox.minX; x <= cardBox.maxX; x++) {
+          edges[y * w + x] = 0;
+        }
+      }
+    }
+    edges = morphClose(edges, w, h);
+  }
+
+  const { components } = connectedComponents(edges, w, h);
+  if (!components.length) {
+    return { edges, w, h, pieces: [], scaleBack: 1 / scale };
+  }
+
+  components.sort((a, b) => b.size - a.size);
+  const minSize = Math.max(150, components[0].size * 0.12);
+  const kept = components.filter(c => c.size >= minSize).slice(0, 6);
+
+  const pieces = kept.map((comp) => {
+    const box = { minX: comp.minX, maxX: comp.maxX, minY: comp.minY, maxY: comp.maxY };
+    return {
+      bbox: box,
+      longest: longestExtentInBox(edges, w, h, box),
+      widthPx: box.maxX - box.minX + 1,
+      heightPx: box.maxY - box.minY + 1,
+      edgeCount: comp.size
+    };
+  });
+
+  return { edges, w, h, pieces, scaleBack: 1 / scale };
+}
+
+function longestExtentInBox(edges, w, h, box) {
+  const pad = 2;
+  const x0 = Math.max(0, box.minX - pad), x1 = Math.min(w - 1, box.maxX + pad);
+  const y0 = Math.max(0, box.minY - pad), y1 = Math.min(h - 1, box.maxY + pad);
+  let longest = 0;
+  for (let a = 0; a < 12; a++) {
+    const rad = (a * Math.PI) / 12;
+    const dx = Math.cos(rad), dy = Math.sin(rad);
+    for (let oy = y0; oy <= y1; oy += 2) {
+      for (let ox = x0; ox <= x1; ox += 2) {
+        const px = ox - dx, py = oy - dy;
+        if (px >= x0 && px <= x1 && py >= y0 && py <= y1) continue;
+        let run = 0;
+        let cx = ox, cy = oy;
+        while (cx >= x0 && cx <= x1 && cy >= y0 && cy <= y1) {
+          if (edges[(cy | 0) * w + (cx | 0)]) {
+            run++;
+            if (run > longest) longest = run;
+          } else {
+            run = 0;
+          }
+          cx += dx;
+          cy += dy;
+        }
+      }
+    }
+  }
+  return longest;
+}
+
 function morphClose(edges, w, h) {
   const dil = new Uint8Array(w * h);
   for (let y = 0; y < h; y++) {
@@ -533,7 +668,6 @@ function morphClose(edges, w, h) {
   return out;
 }
 
-// Labelling komponen bersambung (8-neighborhood, BFS iteratif)
 function connectedComponents(edges, w, h) {
   const labels = new Int32Array(w * h).fill(-1);
   const components = [];
@@ -573,173 +707,6 @@ function connectedComponents(edges, w, h) {
   return { labels, components };
 }
 
-/**
- * Analisis penuh imej. Memulangkan:
- * { edges, w, h, bbox, longest, widthPx, heightPx, edgeCount }
- * atau null jika imej terlalu kecil.
- */
-function runVision() {
-  const width = canvasInput.width;
-  const height = canvasInput.height;
-  if (!width || !height) return null;
-  // Had saiz analisis untuk prestasi telefon
-  const maxSide = 1400;
-  const scale = Math.min(1, maxSide / Math.max(width, height));
-  const w = Math.max(1, Math.round(width * scale));
-  const h = Math.max(1, Math.round(height * scale));
-
-  let srcData;
-  if (scale === 1) {
-    srcData = canvasInput.getContext("2d").getImageData(0, 0, w, h);
-  } else {
-    const tmp = document.createElement("canvas");
-    tmp.width = w;
-    tmp.height = h;
-    const tctx = tmp.getContext("2d");
-    tctx.drawImage(canvasInput, 0, 0, w, h);
-    srcData = tctx.getImageData(0, 0, w, h);
-  }
-
-  // Kad penentukuran dikeluarkan daripada analisis
-  const cardFull = detectBlackCard();
-  let cardBox = null;
-  if (cardFull) {
-    cardBox = {
-      minX: Math.max(0, Math.floor(cardFull.x0 * scale) - 10),
-      maxX: Math.min(w - 1, Math.ceil(cardFull.x1 * scale) + 10),
-      minY: Math.max(0, Math.floor(cardFull.top * scale) - 10),
-      maxY: Math.min(h - 1, Math.ceil(cardFull.bottom * scale) + 10)
-    };
-  }
-
-  const gray = new Float32Array(w * h);
-  {
-    const src = srcData.data;
-    for (let i = 0, p = 0; i < src.length; i += 4, p++) {
-      gray[p] = 0.299 * src[i] + 0.587 * src[i + 1] + 0.114 * src[i + 2];
-    }
-  }
-  // Blur ringkas (dua laluan [1 2 1])
-  const tmpF = new Float32Array(w * h);
-  for (let y = 0; y < h; y++) {
-    const row = y * w;
-    for (let x = 0; x < w; x++) {
-      const a = gray[row + (x > 0 ? x - 1 : 0)];
-      const b = gray[row + x];
-      const c = gray[row + (x < w - 1 ? x + 1 : w - 1)];
-      tmpF[row + x] = (a + 2 * b + c) / 4;
-    }
-  }
-  for (let x = 0; x < w; x++) {
-    for (let y = 0; y < h; y++) {
-      const a = tmpF[(y > 0 ? y - 1 : 0) * w + x];
-      const b = tmpF[y * w + x];
-      const c = tmpF[(y < h - 1 ? y + 1 : h - 1) * w + x];
-      gray[y * w + x] = (a + 2 * b + c) / 4;
-    }
-  }
-
-  // Sobel + ambang adaptif
-  const mag = new Float32Array(w * h);
-  let maxMag = 0;
-  for (let y = 1; y < h - 1; y++) {
-    for (let x = 1; x < w - 1; x++) {
-      const i = y * w + x;
-      const tl = gray[i - w - 1], t = gray[i - w], tr = gray[i - w + 1];
-      const l = gray[i - 1], r = gray[i + 1];
-      const bl = gray[i + w - 1], b = gray[i + w], br = gray[i + w + 1];
-      const gx = (tr + 2 * r + br) - (tl + 2 * l + bl);
-      const gy = (bl + 2 * b + br) - (tl + 2 * t + tr);
-      const m = gx * gx + gy * gy;
-      mag[i] = m;
-      if (m > maxMag) maxMag = m;
-    }
-  }
-  let edges = new Uint8Array(w * h);
-  if (maxMag > 0) {
-    const bins = 256;
-    const hist = new Uint32Array(bins);
-    const s = (bins - 1) / maxMag;
-    for (let i = 0; i < mag.length; i++) hist[(mag[i] * s) | 0]++;
-    // Ambang daripada slider kepekaan: 1 = ketat (4% tepi), 10 = longgar (22%)
-    const frac = 0.04 + (sensitivity - 1) * (0.18 / 9);
-    const target = Math.floor(w * h * frac);
-    let acc = 0, bin = bins - 1;
-    for (let b = 0; b < bins; b++) {
-      acc += hist[b];
-      if (acc >= target) { bin = b; break; }
-    }
-    const thr = bin / s;
-    for (let i = 0; i < mag.length; i++) {
-      if (mag[i] >= thr) edges[i] = 1;
-    }
-    // Buang tepi dalam kawasan kad penentukuran
-    if (cardBox) {
-      for (let y = cardBox.minY; y <= cardBox.maxY; y++) {
-        for (let x = cardBox.minX; x <= cardBox.maxX; x++) {
-          edges[y * w + x] = 0;
-        }
-      }
-    }
-    // Sambung garisan putus-putus
-    edges = morphClose(edges, w, h);
-  }
-
-  const { components } = connectedComponents(edges, w, h);
-  if (!components.length) {
-    return { edges, w, h, pieces: [], scaleBack: 1 / scale };
-  }
-
-  components.sort((a, b) => b.size - a.size);
-  // Multi-piece: keping terbesar + komponen bermakna (>= 12% saiz terbesar), maksimum 6
-  const minSize = Math.max(150, components[0].size * 0.12);
-  const kept = components.filter(c => c.size >= minSize).slice(0, 6);
-
-  const pieces = kept.map((comp) => {
-    const box = { minX: comp.minX, maxX: comp.maxX, minY: comp.minY, maxY: comp.maxY };
-    return {
-      bbox: box,
-      longest: longestExtentInBox(edges, w, h, box),
-      widthPx: box.maxX - box.minX + 1,
-      heightPx: box.maxY - box.minY + 1,
-      edgeCount: comp.size
-    };
-  });
-
-  return { edges, w, h, pieces, scaleBack: 1 / scale };
-}
-
-// Panjang jalur tepi terpanjang dalam kotak (imbasan 12 arah)
-function longestExtentInBox(edges, w, h, box) {
-  const pad = 2;
-  const x0 = Math.max(0, box.minX - pad), x1 = Math.min(w - 1, box.maxX + pad);
-  const y0 = Math.max(0, box.minY - pad), y1 = Math.min(h - 1, box.maxY + pad);
-  let longest = 0;
-  for (let a = 0; a < 12; a++) {
-    const rad = (a * Math.PI) / 12;
-    const dx = Math.cos(rad), dy = Math.sin(rad);
-    for (let oy = y0; oy <= y1; oy += 2) {
-      for (let ox = x0; ox <= x1; ox += 2) {
-        const px = ox - dx, py = oy - dy;
-        if (px >= x0 && px <= x1 && py >= y0 && py <= y1) continue;
-        let run = 0;
-        let cx = ox, cy = oy;
-        while (cx >= x0 && cx <= x1 && cy >= y0 && cy <= y1) {
-          if (edges[(cy | 0) * w + (cx | 0)]) {
-            run++;
-            if (run > longest) longest = run;
-          } else {
-            run = 0;
-          }
-          cx += dx;
-          cy += dy;
-        }
-      }
-    }
-  }
-  return longest;
-}
-
 function analyzePattern() {
   if (!captured) {
     lineStatus.textContent = "Tiada gambar";
@@ -751,21 +718,21 @@ function analyzePattern() {
     try {
       visionResult = runVision();
       selectedPiece = 0;
-      drawVisionOverlay(visionResult);
+      autoMeasure = null;
+      renderMeasureCanvas();
       renderPieceChips();
-      if (visionResult && visionResult.pieces && visionResult.pieces.length) {
+      if (visionResult && visionResult.pieces.length) {
         lineStatus.textContent = visionResult.pieces.length > 1
           ? `${visionResult.pieces.length} keping pola dikesan`
           : "Garisan dikesan";
         updateStatus(
-          "Analisis selesai. Garisan pola dikesan (hijau). " +
-          (visionResult.pieces.length > 1 ? "Pilih keping pola di atas, " : "") +
-          "tentukan skala, kemudian pilih ukuran atau klik dua titik."
+          "Analisis selesai. Hasil dikesan dipaparkan pada gambar pola di bawah. " +
+          "Tentukan skala, kemudian pilih ukuran atau klik dua titik pada gambar."
         );
       } else {
         lineStatus.textContent = "Garisan tidak jelas";
         updateStatus(
-          "Garisan pola tidak dapat dikesan. Cuba gambar dengan cahaya cukup, garisan pensel lebih tebal, dan pola mengisi sebahagian besar bingkai."
+          "Garisan pola tidak dapat dikesan. Laraskan slider kepekaan, atau cuba cahaya cukup, garisan lebih tebal, dan pola mengisi bingkai."
         );
       }
     } catch (error) {
@@ -775,30 +742,42 @@ function analyzePattern() {
   }, 60);
 }
 
-function drawVisionOverlay(result) {
-  overlayCanvas.width = canvasInput.width;
-  overlayCanvas.height = canvasInput.height;
-  const ctx = overlayCanvas.getContext("2d");
-  ctx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
-  if (!result || !result.pieces || !result.pieces.length) return;
+// =========================================================
+// 9b. PAPARAN ANALISIS PADA GAMBAR CAPTURED (measureCanvas)
+// =========================================================
+function renderMeasureCanvas() {
+  const w = canvasInput.width || capturedImage.naturalWidth;
+  const h = canvasInput.height || capturedImage.naturalHeight;
+  if (!w || !h) return;
+  measureCanvas.width = w;
+  measureCanvas.height = h;
+  const ctx = measureCanvas.getContext("2d");
+  ctx.clearRect(0, 0, w, h);
 
-  const s = result.scaleBack || 1;
+  drawVisionLayer(ctx, w, h);
+  drawPointsLayer(ctx);
+  updateChipsFromVision();
+}
 
-  // 1. Titik tepi (sub-sampel untuk prestasi)
+function drawVisionLayer(ctx, w, h) {
+  if (!visionResult || !visionResult.pieces || !visionResult.pieces.length) return;
+  const s = visionResult.scaleBack || 1;
+
+  // 1. Titik tepi hijau
   ctx.fillStyle = "rgba(0,255,120,0.5)";
-  const step = Math.max(1, Math.floor(result.w / 420));
-  for (let y = 0; y < result.h; y += step) {
-    for (let x = 0; x < result.w; x += step) {
-      if (result.edges[y * result.w + x]) {
+  const step = Math.max(1, Math.floor(visionResult.w / 420));
+  for (let y = 0; y < visionResult.h; y += step) {
+    for (let x = 0; x < visionResult.w; x += step) {
+      if (visionResult.edges[y * visionResult.w + x]) {
         ctx.fillRect(x * s, y * s, 3, 3);
       }
     }
   }
 
-  // 2. Kotak setiap keping + label nama + anak panah dimensi (W/T)
+  // 2. Kotak keping + nama + label dimensi
   ctx.font = "bold 16px Arial";
   const cmpp = calibration ? calibration.cmPerPixel : null;
-  result.pieces.forEach((piece, idx) => {
+  visionResult.pieces.forEach((piece, idx) => {
     const color = PIECE_COLORS[idx % PIECE_COLORS.length];
     const b = piece.bbox;
     const name = getPieceDisplayName(idx);
@@ -813,64 +792,97 @@ function drawVisionOverlay(result) {
     ctx.strokeRect(bx, by, bw, bh);
     ctx.setLineDash([]);
 
-    // Label nama (dengan latar gelap supaya sentiasa terbaca)
-    ctx.fillStyle = "rgba(17,24,39,0.75)";
-    const label = `${name}`;
-    const labelWidth = ctx.measureText(label).width + 12;
+    // Label nama (latar gelap supaya sentiasa terbaca)
+    const labelWidth = ctx.measureText(name).width + 12;
     const labelY = Math.max(20, by - 8);
+    ctx.fillStyle = "rgba(17,24,39,0.75)";
     ctx.fillRect(bx, labelY - 18, labelWidth, 22);
     ctx.fillStyle = color;
-    ctx.fillText(label, bx + 6, labelY - 2);
+    ctx.fillText(name, bx + 6, labelY - 2);
 
-    // Anak panah dimensi untuk keping dipilih (dalam cm)
+    // Anak panah dimensi untuk keping dipilih (dalam unit paparan)
     if (idx === selectedPiece) {
       ctx.strokeStyle = "rgba(255,255,255,0.95)";
       ctx.fillStyle = "rgba(255,255,255,0.95)";
       ctx.lineWidth = 2;
 
-      // Anak panah lebar (di bawah kotak)
       const yW = by + bh + 22;
       drawArrow(ctx, bx, yW, bx + bw, yW);
-      if (cmpp) {
-        const wCm = fmtCm(piece.widthPx * s * cmpp);
-        ctx.font = "bold 14px Arial";
-        ctx.fillText(`W = ${wCm}`, bx + bw / 2 - ctx.measureText(`W = ${wCm}`).width / 2, yW + 18);
-        ctx.font = "bold 16px Arial";
-      }
-
-      // Anak panah tinggi (di kanan kotak)
       const xH = bx + bw + 22;
       drawArrow(ctx, xH, by, xH, by + bh);
+
       if (cmpp) {
-        const hCm = fmtCm(piece.heightPx * s * cmpp);
         ctx.font = "bold 14px Arial";
+        const wCm = fmtCm(piece.widthPx * s * cmpp);
+        const wLabel = `W = ${wCm}`;
+        ctx.fillText(wLabel, bx + bw / 2 - ctx.measureText(wLabel).width / 2, yW + 18);
+
+        const hCm = fmtCm(piece.heightPx * s * cmpp);
+        const hLabel = `T = ${hCm}`;
         ctx.save();
         ctx.translate(xH + 14, by + bh / 2);
         ctx.rotate(-Math.PI / 2);
-        ctx.fillText(`T = ${hCm}`, -ctx.measureText(`T = ${hCm}`).width / 2, 0);
+        ctx.fillText(hLabel, -ctx.measureText(hLabel).width / 2, 0);
         ctx.restore();
         ctx.font = "bold 16px Arial";
       }
     }
   });
+}
 
-  // Papar butiran ukuran automatik untuk keping dipilih
-  const piece = result.pieces[selectedPiece] || result.pieces[0];
+function drawArrow(ctx, x0, y0, x1, y1) {
+  const head = 8;
+  const angle = Math.atan2(y1 - y0, x1 - x0);
+  ctx.beginPath();
+  ctx.moveTo(x0, y0);
+  ctx.lineTo(x1, y1);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(x1, y1);
+  ctx.lineTo(x1 - head * Math.cos(angle - Math.PI / 6), y1 - head * Math.sin(angle - Math.PI / 6));
+  ctx.lineTo(x1 - head * Math.cos(angle + Math.PI / 6), y1 - head * Math.sin(angle + Math.PI / 6));
+  ctx.closePath();
+  ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(x0, y0);
+  ctx.lineTo(x0 + head * Math.cos(angle - Math.PI / 6), y0 + head * Math.sin(angle - Math.PI / 6));
+  ctx.lineTo(x0 + head * Math.cos(angle + Math.PI / 6), y0 + head * Math.sin(angle + Math.PI / 6));
+  ctx.closePath();
+  ctx.fill();
+}
+
+function drawPointsLayer(ctx) {
+  if (!manualPoints.length) return;
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = "rgba(255,255,0,0.9)";
+  ctx.fillStyle = "rgba(255,60,60,0.95)";
+  ctx.font = "16px Arial";
+
+  manualPoints.forEach((p, idx) => {
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 6, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillText(`${idx + 1}`, p.x + 10, p.y - 10);
+  });
+
+  if (manualPoints.length === 2) {
+    ctx.beginPath();
+    ctx.moveTo(manualPoints[0].x, manualPoints[0].y);
+    ctx.lineTo(manualPoints[1].x, manualPoints[1].y);
+    ctx.stroke();
+  }
+}
+
+function updateChipsFromVision() {
+  if (!visionResult || !visionResult.pieces || !visionResult.pieces.length) {
+    if (autoChips) autoChips.style.display = "none";
+    return;
+  }
+  const piece = visionResult.pieces[selectedPiece] || visionResult.pieces[0];
   if (autoChips) autoChips.style.display = "flex";
-  if (chipLength) {
-    chipLength.textContent = `📐 Lebar: ${piece.widthPx} px`;
-  }
-  if (chipWidth) {
-    chipWidth.textContent = `📏 Terpanjang: ${piece.longest} px`;
-  }
-  if (chipHeight) {
-    chipHeight.textContent = `↕️ Tinggi: ${piece.heightPx} px`;
-  }
-
-  // Segar semula titik ukuran manual (di atas overlay visi)
-  if (manualPoints.length) {
-    drawPointsOverlay(capturedImage.naturalWidth, capturedImage.naturalHeight);
-  }
+  if (chipLength) chipLength.textContent = `📐 Lebar: ${piece.widthPx} px`;
+  if (chipWidth) chipWidth.textContent = `📏 Terpanjang: ${piece.longest} px`;
+  if (chipHeight) chipHeight.textContent = `↕️ Tinggi: ${piece.heightPx} px`;
 }
 
 // =========================================================
@@ -902,17 +914,16 @@ function calibrateFunction() {
   calibration = { cmPerPixel };
   try {
     localStorage.setItem(STORAGE_KEYS.calibration, JSON.stringify(calibration));
-  } catch (e) {
-    // teruskan tanpa simpanan
-  }
+  } catch (e) { /* teruskan */ }
 
   formulaStatus.textContent = `${cmPerPixel.toFixed(4)} cm/piksel`;
   calibrationStatus.textContent =
-    `🟢 Kad dikesan (${card.widthPx} px). Skala: ${cmPerPixel.toFixed(4)} cm/piksel. Pilih ukuran automatik atau klik dua titik pada gambar.`;
+    `🟢 Kad dikesan (${card.widthPx} px). Skala: ${cmPerPixel.toFixed(4)} cm/piksel. Label dimensi pada gambar kini dalam cm.`;
   updateCheckButtons();
   if (manualPoints.length === 2) {
     computeManualMeasurement();
   }
+  renderMeasureCanvas();
 }
 
 function detectBlackCard() {
@@ -989,7 +1000,7 @@ function onCapturedImageClick(event) {
     updateStatus("Dua titik ditanda. Tekan ✅ Tambah ke Semakan.");
   }
 
-  drawPointsOverlay(natural.w, natural.h);
+  renderMeasureCanvas();
 
   if (manualPoints.length === 2) {
     computeManualMeasurement();
@@ -1014,36 +1025,9 @@ function computeManualMeasurement() {
   updateCheckButtons();
 }
 
-function drawPointsOverlay(w, h) {
-  measureCanvas.width = w;
-  measureCanvas.height = h;
-  const ctx = measureCanvas.getContext("2d");
-  ctx.clearRect(0, 0, w, h);
-  ctx.lineWidth = 2;
-  ctx.strokeStyle = "rgba(255,255,0,0.9)";
-  ctx.fillStyle = "rgba(255,60,60,0.95)";
-  ctx.font = "16px Arial";
-
-  manualPoints.forEach((p, idx) => {
-    ctx.beginPath();
-    ctx.arc(p.x, p.y, 6, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillText(`${idx + 1}`, p.x + 10, p.y - 10);
-  });
-
-  if (manualPoints.length === 2) {
-    ctx.beginPath();
-    ctx.moveTo(manualPoints[0].x, manualPoints[0].y);
-    ctx.lineTo(manualPoints[1].x, manualPoints[1].y);
-    ctx.stroke();
-  }
-}
-
 // =========================================================
 // 12. UKUR AUTOMATIK (daripada hasil visi sebenar)
 // =========================================================
-let autoMeasure = null;
-
 function resetChips() {
   if (chipLength) chipLength.classList.remove("active");
   if (chipWidth) chipWidth.classList.remove("active");
@@ -1090,31 +1074,11 @@ function setAutoMeasureFromChip(which) {
   updateCheckButtons();
 }
 
-// Anak panah dua hala dengan mata anak panah
-function drawArrow(ctx, x0, y0, x1, y1) {
-  const head = 8;
-  const angle = Math.atan2(y1 - y0, x1 - x0);
-  ctx.beginPath();
-  ctx.moveTo(x0, y0);
-  ctx.lineTo(x1, y1);
-  ctx.stroke();
-  // mata di hujung
-  ctx.beginPath();
-  ctx.moveTo(x1, y1);
-  ctx.lineTo(x1 - head * Math.cos(angle - Math.PI / 6), y1 - head * Math.sin(angle - Math.PI / 6));
-  ctx.lineTo(x1 - head * Math.cos(angle + Math.PI / 6), y1 - head * Math.sin(angle + Math.PI / 6));
-  ctx.closePath();
-  ctx.fill();
-  // mata di pangkal
-  ctx.beginPath();
-  ctx.moveTo(x0, y0);
-  ctx.lineTo(x0 + head * Math.cos(angle - Math.PI / 6), y0 + head * Math.sin(angle - Math.PI / 6));
-  ctx.lineTo(x0 + head * Math.cos(angle + Math.PI / 6), y0 + head * Math.sin(angle + Math.PI / 6));
-  ctx.closePath();
-  ctx.fill();
+function autoMeasureFunction() {
+  setAutoMeasureFromChip("length");
 }
 
-// Papar butiran keping pola (Keping 1, Keping 2, ...) untuk dipilih
+// Keping pola: nama & chips
 function getPieceDisplayName(idx) {
   return pieceNames[idx] || `Keping ${idx + 1}`;
 }
@@ -1143,10 +1107,10 @@ function renderPieceChips() {
     chip.textContent = `${name} (${piece.widthPx}×${piece.heightPx})`;
     chip.addEventListener("click", () => {
       selectedPiece = idx;
-      if (pieceNameInput) pieceNameInput.value = pieceNames[idx] || "";
+      autoMeasure = null;
       resetChips();
       renderPieceChips();
-      drawVisionOverlay(visionResult);
+      renderMeasureCanvas();
       updateStatus(`${name} dipilih. Pilih ukuran automatik di bawah.`);
     });
     pieceChips.appendChild(chip);
@@ -1164,16 +1128,10 @@ function renamePieceFunction() {
   pieceNames[selectedPiece] = name;
   try {
     localStorage.setItem(STORAGE_KEYS.pieceNames, JSON.stringify(pieceNames));
-  } catch (e) {
-    // abaikan
-  }
+  } catch (e) { /* abaikan */ }
   renderPieceChips();
-  drawVisionOverlay(visionResult);
+  renderMeasureCanvas();
   updateStatus(`🟢 Keping ${selectedPiece + 1} dinamakan "${name}".`);
-}
-
-function autoMeasureFunction() {
-  setAutoMeasureFromChip("length");
 }
 
 // =========================================================
@@ -1197,10 +1155,7 @@ function resetMeasurement() {
   manualPoints = [];
   patternMeasurement.textContent = "Menunggu imbasan";
   resetChips();
-  if (measureCanvas) {
-    const ctx = measureCanvas.getContext("2d");
-    ctx.clearRect(0, 0, measureCanvas.width, measureCanvas.height);
-  }
+  renderMeasureCanvas();
 }
 
 function runCheck() {
@@ -1224,22 +1179,23 @@ function runCheck() {
 
   const label = getPartLabel(type, part);
   const pieceLabel = visionResult && visionResult.pieces && visionResult.pieces.length > 1
-    ? `${getPieceDisplayName(selectedPiece)}`
+    ? getPieceDisplayName(selectedPiece)
     : null;
-  lastChecks = lastChecks.filter(check => check.label !== `${label}${pieceLabel ? " — " + pieceLabel : ""}`);
+  const fullLabel = pieceLabel ? `${label} — ${pieceLabel}` : label;
+  lastChecks = lastChecks.filter(check => check.label !== fullLabel);
 
   const measured = autoMeasure.cm;
   const diff = measured - target;
   const pass = Math.abs(diff) <= TOLERANCE;
 
-  lastChecks.push({ label: pieceLabel ? `${label} — ${pieceLabel}` : label, target, measured, diff, pass });
+  lastChecks.push({ label: fullLabel, target, measured, diff, pass });
 
   renderCheckTable();
-  renderResult(pass, measured, target, diff, label);
+  renderResult(pass, measured, target, diff, fullLabel);
   updateCheckButtons();
   updateStatus(pass
-    ? `🟢 ${label} LULUS ditambah. Pilih bahagian lain atau 💾 Simpan Semakan.`
-    : `🔴 ${label} PERLU PEMBETULAN ditambah. Pilih bahagian lain atau 💾 Simpan Semakan.`);
+    ? `🟢 ${fullLabel} LULUS ditambah. Pilih bahagian lain atau 💾 Simpan Semakan.`
+    : `🔴 ${fullLabel} PERLU PEMBETULAN ditambah. Pilih bahagian lain atau 💾 Simpan Semakan.`);
 }
 
 function saveChecksFunction() {
@@ -1310,9 +1266,7 @@ function renderResult(pass, measured, target, diff, label) {
   } else {
     resultTitle.textContent = "🔴 PERLU PEMBETULAN";
     resultTitle.className = "result-fail";
-    const advice = diff > 0
-      ? "Kurangkan ukuran pola."
-      : "Tambahkan ukuran pola.";
+    const advice = diff > 0 ? "Kurangkan ukuran pola." : "Tambahkan ukuran pola.";
     resultMessage.textContent =
       `${label}: sasaran ${fmtCm(target)}, ukuran pola ${fmtCm(measured)} (beza ${fmtDiff(diff)}). ${advice}`;
   }
@@ -1333,16 +1287,13 @@ function loadPassport() {
 function savePassport(entries) {
   try {
     localStorage.setItem(STORAGE_KEYS.passport, JSON.stringify(entries));
-  } catch (e) {
-    // teruskan tanpa simpanan
-  }
+  } catch (e) { /* teruskan */ }
 }
 
 function addToPassport(checks) {
   const entries = loadPassport();
-  const now = new Date();
   entries.unshift({
-    date: now.toLocaleString("ms-MY"),
+    date: new Date().toLocaleString("ms-MY"),
     checks
   });
   while (entries.length > 30) {
@@ -1385,8 +1336,7 @@ function renderPassport() {
       line.className = "passport-line";
       line.innerHTML =
         `${check.pass ? "🟢" : "🔴"} <strong>${check.label}</strong>: ` +
-        `${fmtCm(check.measured)} (sasaran ${fmtCm(check.target)}, ` +
-        `beza ${fmtDiff(check.diff)}) — ` +
+        `${fmtCm(check.measured)} (sasaran ${fmtCm(check.target)}, beza ${fmtDiff(check.diff)}) — ` +
         (check.pass ? "LULUS" : "PERLU PEMBETULAN");
       item.appendChild(line);
     }
@@ -1403,8 +1353,6 @@ function clearPassportFunction() {
 // =========================================================
 // 15. EVENT
 // =========================================================
-// Ikatan acara secara selamat: elak seluruh aplikasi crash jika
-// sesuatu elemen tidak ditemui (cth. cache pelayar bercampur versi)
 function safeListen(element, type, handler) {
   if (element) {
     element.addEventListener(type, handler);
@@ -1463,7 +1411,8 @@ safeListen(edgeSensitivity, "input", () => {
         if (selectedPiece >= visionResult.pieces.length) {
           selectedPiece = 0;
         }
-        drawVisionOverlay(visionResult);
+        autoMeasure = null;
+        renderMeasureCanvas();
         renderPieceChips();
         updateStatus(visionResult.pieces.length
           ? `Analisis selesai (kepekaan ${sensitivity}): ${visionResult.pieces.length} keping dikesan.`
@@ -1475,6 +1424,11 @@ safeListen(edgeSensitivity, "input", () => {
     }, 30);
   }, 250);
 });
+safeListen(edgeSensitivity, "change", () => {
+  try {
+    localStorage.setItem(STORAGE_KEYS.sensitivity, String(sensitivity));
+  } catch (e) { /* abaikan */ }
+});
 
 safeListen(clearPassportButton, "click", clearPassportFunction);
 
@@ -1483,33 +1437,18 @@ safeListen(clearPassportButton, "click", clearPassportFunction);
 // =========================================================
 updateStatus("Kamera belum diaktifkan.");
 updateUnitLabels();
-// Muat kepekaan tersimpan
 try {
   const savedSensitivity = parseInt(localStorage.getItem(STORAGE_KEYS.sensitivity), 10);
   if (savedSensitivity >= 1 && savedSensitivity <= 10) {
     sensitivity = savedSensitivity;
   }
-} catch (e) {
-  // abaikan
-}
-if (edgeSensitivity) edgeSensitivity.value = String(sensitivity);
-if (sensitivityValue) sensitivityValue.textContent = String(sensitivity);
-// Muat nama keping tersimpan
-try {
   const savedNames = JSON.parse(localStorage.getItem(STORAGE_KEYS.pieceNames) || "{}");
   if (savedNames && typeof savedNames === "object") {
     pieceNames = savedNames;
   }
-} catch (e) {
-  // abaikan
-}
-safeListen(edgeSensitivity, "change", () => {
-  try {
-    localStorage.setItem(STORAGE_KEYS.sensitivity, String(sensitivity));
-  } catch (e) {
-    // abaikan
-  }
-});
+} catch (e) { /* abaikan */ }
+if (edgeSensitivity) edgeSensitivity.value = String(sensitivity);
+if (sensitivityValue) sensitivityValue.textContent = String(sensitivity);
 loadSavedMeasurements();
 populatePatternParts();
 renderPassport();
