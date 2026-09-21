@@ -1,1420 +1,432 @@
-document.addEventListener("DOMContentLoaded", () => {
-
-    // =========================================================
-    // SMART-POLA V4
-    // Camera + Pattern Line Detection + Measurement + Status
-    // Diselaraskan dengan index.html semasa
-    // =========================================================
+// =========================================================
+// SMART-POLA V3.2
+// Camera + Capture Image + Pattern Line Detection
+// =========================================================
 
 
-    // =========================================================
-    // 1. ELEMENT HTML
-    // =========================================================
+// =========================================================
+// 1. ELEMENT HTML
+// =========================================================
 
-    const garmentType =
-        document.getElementById("garmentType");
+const camera = document.getElementById("camera");
+const canvasInput = document.getElementById("canvasInput");
+const overlayCanvas = document.getElementById("overlayCanvas");
 
-    const patternPart =
-        document.getElementById("patternPart");
+const startCamera = document.getElementById("startCamera");
+const stopCamera = document.getElementById("stopCamera");
+const captureImage = document.getElementById("captureImage");
 
-    const patternSelectionStatus =
-        document.getElementById("patternSelectionStatus");
+const capturedImage = document.getElementById("capturedImage");
+const noImageMessage = document.getElementById("noImageMessage");
 
-    const unitSelect =
-        document.getElementById("unit");
+const status = document.getElementById("status");
 
-    const saveMeasurements =
-        document.getElementById("saveMeasurements");
+const lineStatus = document.getElementById("lineStatus");
+const patternMeasurement = document.getElementById("patternMeasurement");
+const formulaStatus = document.getElementById("formulaStatus");
 
-    const measurementStatus =
-        document.getElementById("measurementStatus");
-
-    const startCameraBtn =
-        document.getElementById("startCamera");
-
-    const stopCameraBtn =
-        document.getElementById("stopCamera");
-
-    const camera =
-        document.getElementById("camera");
-
-    const overlayCanvas =
-        document.getElementById("overlayCanvas");
-
-    const cameraStatus =
-        document.getElementById("status");
-
-    const lineStatus =
-        document.getElementById("lineStatus");
-
-    const patternMeasurement =
-        document.getElementById("patternMeasurement");
-
-    const formulaStatus =
-        document.getElementById("formulaStatus");
-
-    const resultTitle =
-        document.getElementById("resultTitle");
-
-    const resultMessage =
-        document.getElementById("resultMessage");
+const resultTitle = document.getElementById("resultTitle");
+const resultMessage = document.getElementById("resultMessage");
 
 
-    // =========================================================
-    // 2. PILIHAN BAHAGIAN POLA
-    // =========================================================
+// =========================================================
+// 2. VARIABLES
+// =========================================================
 
-    const patternOptions = {
-
-        baju: [
-            "Badan Hadapan",
-            "Badan Belakang",
-            "Lengan",
-            "Kolar",
-            "Manset"
-        ],
-
-        kain: [
-            "Pola Kain",
-            "Pinggang"
-        ],
-
-        seluar: [
-            "Badan Seluar Hadapan",
-            "Badan Seluar Belakang",
-            "Pinggang",
-            "Poket"
-        ],
-
-        lain: [
-            "Bahagian Lain"
-        ]
-    };
+let cameraStream = null;
 
 
-    function updatePatternParts() {
+// =========================================================
+// 3. STATUS
+// =========================================================
 
-        const selected =
-            garmentType.value;
+function updateStatus(message) {
 
-        patternPart.innerHTML = "";
+    if (status) {
+        status.textContent = message;
+    }
 
-        const firstOption =
-            document.createElement("option");
-
-        firstOption.value = "";
-        firstOption.textContent =
-            "-- Pilih bahagian pola --";
-
-        patternPart.appendChild(firstOption);
+}
 
 
-        if (!selected) {
+// =========================================================
+// 4. MULA KAMERA
+// =========================================================
 
-            patternSelectionStatus.textContent =
-                "Sila pilih jenis pakaian dahulu.";
+async function startCameraFunction() {
 
-            return;
-        }
+    try {
 
-
-        const parts =
-            patternOptions[selected] || [];
-
-
-        parts.forEach((part) => {
-
-            const option =
-                document.createElement("option");
-
-            option.value = part;
-            option.textContent = part;
-
-            patternPart.appendChild(option);
+        cameraStream = await navigator.mediaDevices.getUserMedia({
+            video: {
+                facingMode: "environment"
+            },
+            audio: false
         });
 
+        camera.srcObject = cameraStream;
 
-        patternSelectionStatus.textContent =
-            "Sila pilih bahagian pola.";
+        await camera.play();
+
+        // Tetapkan saiz canvas ikut kamera
+        overlayCanvas.width = camera.videoWidth;
+        overlayCanvas.height = camera.videoHeight;
+
+        canvasInput.width = camera.videoWidth;
+        canvasInput.height = camera.videoHeight;
+
+        startCamera.disabled = true;
+        stopCamera.disabled = false;
+        captureImage.disabled = false;
+
+        updateStatus("Kamera sedang aktif. Letakkan pola dalam pandangan kamera.");
+
+    } catch (error) {
+
+        console.error(error);
+
+        updateStatus(
+            "Kamera tidak dapat diaktifkan. Sila semak kebenaran kamera."
+        );
+
+    }
+
+}
+
+
+// =========================================================
+// 5. HENTIKAN KAMERA
+// =========================================================
+
+function stopCameraFunction() {
+
+    if (cameraStream) {
+
+        cameraStream.getTracks().forEach(track => {
+            track.stop();
+        });
+
+        cameraStream = null;
+
+    }
+
+    camera.srcObject = null;
+
+    startCamera.disabled = false;
+    stopCamera.disabled = true;
+    captureImage.disabled = true;
+
+    updateStatus("Kamera dihentikan.");
+
+}
+
+
+// =========================================================
+// 6. AMBIL GAMBAR
+// =========================================================
+
+function captureImageFunction() {
+
+    if (!cameraStream) {
+
+        updateStatus("Sila mulakan kamera terlebih dahulu.");
+
+        return;
+
     }
 
 
-    garmentType.addEventListener(
-        "change",
-        updatePatternParts
+    // Pastikan saiz canvas sama dengan video
+    canvasInput.width = camera.videoWidth;
+    canvasInput.height = camera.videoHeight;
+
+
+    // Ambil frame daripada kamera
+    const context = canvasInput.getContext("2d");
+
+    context.drawImage(
+        camera,
+        0,
+        0,
+        canvasInput.width,
+        canvasInput.height
     );
 
 
-    patternPart.addEventListener(
-        "change",
-        () => {
+    // Tukarkan canvas kepada gambar
+    const imageData = canvasInput.toDataURL("image/png");
 
-            if (patternPart.value) {
 
-                patternSelectionStatus.textContent =
-                    "Bahagian pola dipilih: " +
-                    patternPart.value;
+    // Paparkan gambar
+    capturedImage.src = imageData;
 
-            } else {
+    capturedImage.style.display = "block";
 
-                patternSelectionStatus.textContent =
-                    "Sila pilih bahagian pola.";
-            }
-        }
+    noImageMessage.style.display = "none";
+
+
+    updateStatus(
+        "Gambar pola berjaya diambil. Sedia untuk analisis."
     );
 
 
-    // =========================================================
-    // 3. UNIT UKURAN
-    // =========================================================
+    // Terus jalankan analisis
+    analyzePattern();
 
-    unitSelect.addEventListener(
-        "change",
-        () => {
-
-            document
-                .querySelectorAll(".unit-label")
-                .forEach((label) => {
-
-                    label.textContent =
-                        unitSelect.value;
-
-                });
-        }
-    );
+}
 
 
-    // =========================================================
-    // 4. SIMPAN UKURAN
-    // =========================================================
+// =========================================================
+// 7. ANALISIS POLA
+// =========================================================
 
-    saveMeasurements.addEventListener(
-        "click",
-        () => {
+function analyzePattern() {
 
-            const measurements = {
+    if (!capturedImage.src) {
 
-                shoulder:
-                    document.getElementById("shoulder").value,
+        lineStatus.textContent = "Tiada gambar";
 
-                chest:
-                    document.getElementById("chest").value,
+        patternMeasurement.textContent = "Tiada data";
 
-                waist:
-                    document.getElementById("waist").value,
+        formulaStatus.textContent = "Belum tersedia";
 
-                hip:
-                    document.getElementById("hip").value,
+        resultTitle.textContent = "Menunggu semakan pola";
 
-                neck:
-                    document.getElementById("neck").value,
+        resultMessage.textContent =
+            "Sila ambil gambar pola terlebih dahulu.";
 
-                backLength:
-                    document.getElementById("backLength").value,
+        return;
 
-                unit:
-                    unitSelect.value
-            };
+    }
 
 
-            const values = [
-                measurements.shoulder,
-                measurements.chest,
-                measurements.waist,
-                measurements.hip,
-                measurements.neck,
-                measurements.backLength
-            ];
+    updateStatus("Menganalisis garisan pola...");
 
 
-            const incomplete =
-                values.some(
-                    value =>
-                        value === "" ||
-                        Number(value) <= 0
-                );
-
-
-            if (incomplete) {
-
-                measurementStatus.textContent =
-                    "Sila lengkapkan semua ukuran badan.";
-
-                return;
-            }
-
-
-            localStorage.setItem(
-                "smartPolaMeasurements",
-                JSON.stringify(measurements)
-            );
-
-
-            measurementStatus.textContent =
-                "✓ Ukuran badan berjaya disimpan.";
-        }
-    );
-
-
-    // =========================================================
-    // 5. CAMERA
-    // =========================================================
-
-    let cameraStream = null;
-
-    let animationFrame = null;
-
-    let currentPattern = null;
-
-    let lastScanTime = 0;
-
-    const SCAN_INTERVAL = 100;
-
-
-    // Canvas pemprosesan dalaman
-    const processingCanvas =
-        document.createElement("canvas");
-
-    const processingCtx =
-        processingCanvas.getContext(
-            "2d",
-            {
-                willReadFrequently: true
-            }
-        );
-
-
-    // =========================================================
-    // 6. MULAKAN CAMERA
-    // =========================================================
-
-    async function startCamera() {
+    // Beri sedikit masa supaya gambar selesai dipaparkan
+    setTimeout(() => {
 
         try {
 
-            if (
-                !navigator.mediaDevices ||
-                !navigator.mediaDevices.getUserMedia
-            ) {
-
-                cameraStatus.textContent =
-                    "Pelayar tidak menyokong akses kamera.";
-
-                return;
-            }
-
-
-            cameraStream =
-                await navigator.mediaDevices
-                    .getUserMedia({
-
-                        video: {
-
-                            facingMode: {
-                                ideal: "environment"
-                            },
-
-                            width: {
-                                ideal: 1280
-                            },
-
-                            height: {
-                                ideal: 720
-                            }
-                        },
-
-                        audio: false
-                    });
-
-
-            camera.srcObject =
-                cameraStream;
-
-
-            await camera.play();
-
-
-            cameraStatus.textContent =
-                "Kamera sedang aktif.";
-
-            startCameraBtn.disabled = true;
-
-            stopCameraBtn.disabled = false;
-
-
-            lineStatus.textContent =
-                "Mengesan garisan...";
-
-
-            resultTitle.textContent =
-                "Imbasan sedang dijalankan";
-
-
-            resultMessage.textContent =
-                "Halakan kamera pada pola.";
-
-
-            startPatternScan();
+            detectPatternLines();
 
         } catch (error) {
 
             console.error(error);
 
-            cameraStatus.textContent =
-                "Kamera tidak dapat dibuka. Sila benarkan akses kamera.";
-        }
-    }
-
-
-    // =========================================================
-    // 7. HENTIKAN CAMERA
-    // =========================================================
-
-    function stopCamera() {
-
-        if (cameraStream) {
-
-            cameraStream
-                .getTracks()
-                .forEach((track) => {
-
-                    track.stop();
-
-                });
-
-            cameraStream = null;
-        }
-
-
-        if (animationFrame) {
-
-            cancelAnimationFrame(
-                animationFrame
+            updateStatus(
+                "Analisis pola tidak dapat dilakukan."
             );
 
-            animationFrame = null;
         }
 
+    }, 300);
 
-        camera.srcObject = null;
-
-
-        const ctx =
-            overlayCanvas.getContext("2d");
+}
 
 
-        ctx.clearRect(
-            0,
-            0,
-            overlayCanvas.width,
-            overlayCanvas.height
-        );
+// =========================================================
+// 8. KESAN GARISAN POLA
+// =========================================================
 
+function detectPatternLines() {
 
-        currentPattern = null;
+    const context = canvasInput.getContext("2d");
 
-
-        cameraStatus.textContent =
-            "Kamera dihentikan.";
-
-        lineStatus.textContent =
-            "Belum dianalisis";
-
-        patternMeasurement.textContent =
-            "Menunggu imbasan";
-
-        formulaStatus.textContent =
-            "Belum tersedia";
-
-
-        startCameraBtn.disabled = false;
-
-        stopCameraBtn.disabled = true;
-    }
-
-
-    startCameraBtn.addEventListener(
-        "click",
-        startCamera
+    const imageData = context.getImageData(
+        0,
+        0,
+        canvasInput.width,
+        canvasInput.height
     );
 
 
-    stopCameraBtn.addEventListener(
-        "click",
-        stopCamera
-    );
+    // Semakan asas imej
+    let darkPixels = 0;
+
+    const data = imageData.data;
 
 
-    // =========================================================
-    // 8. BLUR
-    // =========================================================
+    for (let i = 0; i < data.length; i += 16) {
 
-    function blurImage(
-        gray,
-        width,
-        height
-    ) {
+        const r = data[i];
+        const g = data[i + 1];
+        const b = data[i + 2];
 
-        const blurred =
-            new Float32Array(
-                width * height
-            );
+        const brightness =
+            (r + g + b) / 3;
 
 
-        for (
-            let y = 1;
-            y < height - 1;
-            y++
-        ) {
-
-            for (
-                let x = 1;
-                x < width - 1;
-                x++
-            ) {
-
-                let total = 0;
-
-
-                for (
-                    let dy = -1;
-                    dy <= 1;
-                    dy++
-                ) {
-
-                    for (
-                        let dx = -1;
-                        dx <= 1;
-                        dx++
-                    ) {
-
-                        total +=
-                            gray[
-                                (y + dy) *
-                                width +
-                                (x + dx)
-                            ];
-                    }
-                }
-
-
-                blurred[
-                    y * width + x
-                ] =
-                    total / 9;
-            }
+        if (brightness < 150) {
+            darkPixels++;
         }
 
-
-        return blurred;
     }
 
 
-    // =========================================================
-    // 9. EDGE DETECTION
-    // =========================================================
+    // Paparan overlay
+    drawPatternOverlay();
 
-    function detectEdges(
-        gray,
-        width,
-        height
-    ) {
 
-        const edges =
-            new Uint8Array(
-                width * height
-            );
-
-
-        for (
-            let y = 2;
-            y < height - 2;
-            y++
-        ) {
-
-            for (
-                let x = 2;
-                x < width - 2;
-                x++
-            ) {
-
-                const left =
-                    gray[
-                        y * width +
-                        (x - 1)
-                    ];
-
-                const right =
-                    gray[
-                        y * width +
-                        (x + 1)
-                    ];
-
-                const top =
-                    gray[
-                        (y - 1) * width +
-                        x
-                    ];
-
-                const bottom =
-                    gray[
-                        (y + 1) * width +
-                        x
-                    ];
-
-
-                const gx =
-                    right - left;
-
-                const gy =
-                    bottom - top;
-
-
-                const magnitude =
-                    Math.sqrt(
-                        gx * gx +
-                        gy * gy
-                    );
-
-
-                if (magnitude > 65) {
-
-                    edges[
-                        y * width + x
-                    ] = 1;
-                }
-            }
-        }
-
-
-        return edges;
-    }
-
-
-    // =========================================================
-    // 10. FILTER NOISE
-    // =========================================================
-
-    function filterNoise(
-        edges,
-        width,
-        height
-    ) {
-
-        const filtered =
-            new Uint8Array(
-                width * height
-            );
-
-
-        for (
-            let y = 3;
-            y < height - 3;
-            y++
-        ) {
-
-            for (
-                let x = 3;
-                x < width - 3;
-                x++
-            ) {
-
-                const index =
-                    y * width + x;
-
-
-                if (!edges[index]) {
-
-                    continue;
-                }
-
-
-                let horizontal = 0;
-
-                let vertical = 0;
-
-                let diagonal1 = 0;
-
-                let diagonal2 = 0;
-
-
-                for (
-                    let d = 1;
-                    d <= 3;
-                    d++
-                ) {
-
-                    if (
-                        edges[
-                            y * width +
-                            (x - d)
-                        ]
-                    ) {
-                        horizontal++;
-                    }
-
-                    if (
-                        edges[
-                            y * width +
-                            (x + d)
-                        ]
-                    ) {
-                        horizontal++;
-                    }
-
-
-                    if (
-                        edges[
-                            (y - d) *
-                            width +
-                            x
-                        ]
-                    ) {
-                        vertical++;
-                    }
-
-                    if (
-                        edges[
-                            (y + d) *
-                            width +
-                            x
-                        ]
-                    ) {
-                        vertical++;
-                    }
-
-
-                    if (
-                        edges[
-                            (y - d) *
-                            width +
-                            (x + d)
-                        ]
-                    ) {
-                        diagonal1++;
-                    }
-
-                    if (
-                        edges[
-                            (y + d) *
-                            width +
-                            (x - d)
-                        ]
-                    ) {
-                        diagonal1++;
-                    }
-
-
-                    if (
-                        edges[
-                            (y - d) *
-                            width +
-                            (x - d)
-                        ]
-                    ) {
-                        diagonal2++;
-                    }
-
-                    if (
-                        edges[
-                            (y + d) *
-                            width +
-                            (x + d)
-                        ]
-                    ) {
-                        diagonal2++;
-                    }
-                }
-
-
-                const strongest =
-                    Math.max(
-                        horizontal,
-                        vertical,
-                        diagonal1,
-                        diagonal2
-                    );
-
-
-                if (strongest >= 3) {
-
-                    filtered[index] = 1;
-                }
-            }
-        }
-
-
-        return filtered;
-    }
-
-
-    // =========================================================
-    // 11. CARI KAWASAN POLA
-    // =========================================================
-
-    function findPatternRegion(
-        edges,
-        width,
-        height
-    ) {
-
-        let minX = width;
-
-        let minY = height;
-
-        let maxX = 0;
-
-        let maxY = 0;
-
-        let count = 0;
-
-
-        const marginX =
-            Math.floor(
-                width * 0.05
-            );
-
-        const marginY =
-            Math.floor(
-                height * 0.05
-            );
-
-
-        for (
-            let y = marginY;
-            y < height - marginY;
-            y++
-        ) {
-
-            for (
-                let x = marginX;
-                x < width - marginX;
-                x++
-            ) {
-
-                if (
-                    edges[
-                        y * width + x
-                    ] === 1
-                ) {
-
-                    count++;
-
-
-                    if (x < minX)
-                        minX = x;
-
-                    if (x > maxX)
-                        maxX = x;
-
-                    if (y < minY)
-                        minY = y;
-
-                    if (y > maxY)
-                        maxY = y;
-                }
-            }
-        }
-
-
-        if (count < 80) {
-
-            return null;
-        }
-
-
-        const boxWidth =
-            maxX - minX;
-
-        const boxHeight =
-            maxY - minY;
-
-
-        if (
-            boxWidth < width * 0.12 ||
-            boxHeight < height * 0.12
-        ) {
-
-            return null;
-        }
-
-
-        return {
-
-            minX,
-            minY,
-
-            maxX,
-            maxY,
-
-            width: boxWidth,
-
-            height: boxHeight,
-
-            count
-        };
-    }
-
-
-    // =========================================================
-    // 12. LUKIS GARIS POLA
-    // =========================================================
-
-    function drawDetectedLines(
-        ctx,
-        edges,
-        width,
-        height,
-        scaleX,
-        scaleY,
-        region
-    ) {
-
-        ctx.clearRect(
-            0,
-            0,
-            overlayCanvas.width,
-            overlayCanvas.height
-        );
-
-
-        ctx.strokeStyle =
-            "rgba(0,255,120,0.85)";
-
-        ctx.lineWidth = 3;
-
-        ctx.lineCap = "round";
-
-
-        const step = 2;
-
-
-        for (
-            let y = region.minY;
-            y <= region.maxY;
-            y += step
-        ) {
-
-            let runStart = -1;
-
-
-            for (
-                let x = region.minX;
-                x <= region.maxX;
-                x++
-            ) {
-
-                const detected =
-                    edges[
-                        y * width + x
-                    ] === 1;
-
-
-                if (
-                    detected &&
-                    runStart === -1
-                ) {
-
-                    runStart = x;
-                }
-
-
-                const endOfRun =
-                    !detected ||
-                    x === region.maxX;
-
-
-                if (
-                    endOfRun &&
-                    runStart !== -1
-                ) {
-
-                    const runEnd =
-                        detected &&
-                        x === region.maxX
-                            ? x
-                            : x - 1;
-
-
-                    if (
-                        runEnd -
-                        runStart >= 4
-                    ) {
-
-                        ctx.beginPath();
-
-
-                        ctx.moveTo(
-                            runStart * scaleX,
-                            y * scaleY
-                        );
-
-
-                        ctx.lineTo(
-                            runEnd * scaleX,
-                            y * scaleY
-                        );
-
-
-                        ctx.stroke();
-                    }
-
-
-                    runStart = -1;
-                }
-            }
-        }
-    }
-
-
-    // =========================================================
-    // 13. ANALISIS AUTOMATIK
-    // =========================================================
-
-    function updateAnalysis(
-        region,
-        scaleX,
-        scaleY
-    ) {
-
-        if (!region) {
-
-            lineStatus.textContent =
-                "Garisan belum dikesan";
-
-            patternMeasurement.textContent =
-                "Menunggu imbasan";
-
-            formulaStatus.textContent =
-                "Belum tersedia";
-
-            return;
-        }
-
-
-        const widthPx =
-            region.width * scaleX;
-
-        const heightPx =
-            region.height * scaleY;
-
-
-        currentPattern = {
-
-            pixelWidth: widthPx,
-
-            pixelHeight: heightPx,
-
-            detectedPixels:
-                region.count
-        };
-
+    if (darkPixels > 100) {
 
         lineStatus.textContent =
-            "✓ Garisan pola dikesan";
-
+            "Garisan dikesan";
 
         patternMeasurement.textContent =
-            Math.round(widthPx) +
-            " px × " +
-            Math.round(heightPx) +
-            " px";
-
+            "Imej berjaya dibaca";
 
         formulaStatus.textContent =
-            "Menunggu formula pola";
+            "Menunggu pengiraan ukuran";
 
 
         resultTitle.textContent =
             "Pola berjaya diimbas";
 
+        resultMessage.textContent =
+            "Garisan pola telah dikesan. Semakan ukuran boleh diteruskan.";
+
+
+        updateStatus(
+            "Analisis selesai. Garisan pola berjaya dikesan."
+        );
+
+    } else {
+
+        lineStatus.textContent =
+            "Garisan tidak jelas";
+
+        patternMeasurement.textContent =
+            "Perlu imbasan semula";
+
+        formulaStatus.textContent =
+            "Belum tersedia";
+
+
+        resultTitle.textContent =
+            "Pola perlu diimbas semula";
 
         resultMessage.textContent =
-            "Kawasan pola telah dikenal pasti. Semakan formula ukuran akan disambungkan ke modul seterusnya.";
+            "Pastikan pola berada di permukaan rata dan garisan pensel kelihatan jelas.";
+
+
+        updateStatus(
+            "Garisan pola kurang jelas. Cuba ambil gambar semula."
+        );
+
     }
 
+}
 
-    // =========================================================
-    // 14. CAMERA SCAN
-    // =========================================================
 
-    function startPatternScan() {
+// =========================================================
+// 9. OVERLAY GARISAN
+// =========================================================
 
-        const ctx =
-            overlayCanvas.getContext("2d");
+function drawPatternOverlay() {
 
+    const ctx = overlayCanvas.getContext("2d");
 
-        function scan(timestamp) {
+    ctx.clearRect(
+        0,
+        0,
+        overlayCanvas.width,
+        overlayCanvas.height
+    );
 
-            if (!cameraStream) {
 
-                return;
-            }
+    // Saiz overlay ikut kamera
+    overlayCanvas.width = canvasInput.width;
+    overlayCanvas.height = canvasInput.height;
 
 
-            animationFrame =
-                requestAnimationFrame(
-                    scan
-                );
-
-
-            if (
-                timestamp -
-                lastScanTime <
-                SCAN_INTERVAL
-            ) {
-
-                return;
-            }
-
-
-            lastScanTime =
-                timestamp;
-
-
-            if (
-                camera.videoWidth === 0 ||
-                camera.videoHeight === 0
-            ) {
-
-                return;
-            }
-
-
-            // Resolusi pemprosesan rendah
-            const scale = 0.25;
-
-
-            const width =
-                Math.floor(
-                    camera.videoWidth *
-                    scale
-                );
-
-
-            const height =
-                Math.floor(
-                    camera.videoHeight *
-                    scale
-                );
-
-
-            processingCanvas.width =
-                width;
-
-            processingCanvas.height =
-                height;
-
-
-            overlayCanvas.width =
-                camera.videoWidth;
-
-            overlayCanvas.height =
-                camera.videoHeight;
-
-
-            processingCtx.drawImage(
-                camera,
-                0,
-                0,
-                width,
-                height
-            );
-
-
-            const imageData =
-                processingCtx.getImageData(
-                    0,
-                    0,
-                    width,
-                    height
-                );
-
-
-            const pixels =
-                imageData.data;
-
-
-            // Grayscale
-            const gray =
-                new Float32Array(
-                    width * height
-                );
-
-
-            for (
-                let i = 0, p = 0;
-                i < gray.length;
-                i++, p += 4
-            ) {
-
-                gray[i] =
-                    pixels[p] * 0.299 +
-                    pixels[p + 1] * 0.587 +
-                    pixels[p + 2] * 0.114;
-            }
-
-
-            // Blur
-            const blurred =
-                blurImage(
-                    gray,
-                    width,
-                    height
-                );
-
-
-            // Edge
-            const edges =
-                detectEdges(
-                    blurred,
-                    width,
-                    height
-                );
-
-
-            // Noise filter
-            const filtered =
-                filterNoise(
-                    edges,
-                    width,
-                    height
-                );
-
-
-            // Cari pola
-            const region =
-                findPatternRegion(
-                    filtered,
-                    width,
-                    height
-                );
-
-
-            if (region) {
-
-                const scaleX =
-                    camera.videoWidth /
-                    width;
-
-                const scaleY =
-                    camera.videoHeight /
-                    height;
-
-
-                drawDetectedLines(
-                    ctx,
-                    filtered,
-                    width,
-                    height,
-                    scaleX,
-                    scaleY,
-                    region
-                );
-
-
-                // Kotak pola
-                const boxX =
-                    region.minX *
-                    scaleX;
-
-                const boxY =
-                    region.minY *
-                    scaleY;
-
-                const boxWidth =
-                    region.width *
-                    scaleX;
-
-                const boxHeight =
-                    region.height *
-                    scaleY;
-
-
-                ctx.strokeStyle =
-                    "rgba(0,255,0,0.9)";
-
-                ctx.lineWidth = 4;
-
-                ctx.setLineDash([]);
-
-
-                ctx.strokeRect(
-                    boxX,
-                    boxY,
-                    boxWidth,
-                    boxHeight
-                );
-
-
-                // Titik tengah
-                const centerX =
-                    boxX +
-                    boxWidth / 2;
-
-                const centerY =
-                    boxY +
-                    boxHeight / 2;
-
-
-                ctx.beginPath();
-
-                ctx.arc(
-                    centerX,
-                    centerY,
-                    7,
-                    0,
-                    Math.PI * 2
-                );
-
-
-                ctx.fillStyle =
-                    "rgba(0,255,0,0.9)";
-
-                ctx.fill();
-
-
-                updateAnalysis(
-                    region,
-                    scaleX,
-                    scaleY
-                );
-
-
-                cameraStatus.textContent =
-                    "Kamera sedang aktif — pola dikesan.";
-
-
-            } else {
-
-                ctx.clearRect(
-                    0,
-                    0,
-                    overlayCanvas.width,
-                    overlayCanvas.height
-                );
-
-
-                currentPattern = null;
-
-
-                lineStatus.textContent =
-                    "Mengesan garisan...";
-
-
-                patternMeasurement.textContent =
-                    "Menunggu imbasan";
-
-
-                cameraStatus.textContent =
-                    "Kamera aktif — halakan pada pola.";
-            }
-        }
-
-
-        animationFrame =
-            requestAnimationFrame(
-                scan
-            );
-    }
-
-
-    // =========================================================
-    // 15. STATUS AWAL
-    // =========================================================
-
-    patternSelectionStatus.textContent =
-        "Sila pilih jenis pakaian dahulu.";
-
-    cameraStatus.textContent =
-        "Kamera belum diaktifkan.";
-
-    lineStatus.textContent =
-        "Belum dianalisis";
-
-    patternMeasurement.textContent =
-        "Menunggu imbasan";
-
-    formulaStatus.textContent =
-        "Belum tersedia";
-
-    stopCameraBtn.disabled = true;
-
-
-    // =========================================================
-    // 16. LOAD UKURAN YANG PERNAH DISIMPAN
-    // =========================================================
-
-    const saved =
-        localStorage.getItem(
-            "smartPolaMeasurements"
+    const imageData =
+        canvasInput.getContext("2d").getImageData(
+            0,
+            0,
+            canvasInput.width,
+            canvasInput.height
         );
 
 
-    if (saved) {
-
-        try {
-
-            const measurements =
-                JSON.parse(saved);
+    const data = imageData.data;
 
 
-            const fields = [
-                "shoulder",
-                "chest",
-                "waist",
-                "hip",
-                "neck",
-                "backLength"
-            ];
+    ctx.lineWidth = 2;
 
 
-            fields.forEach((field) => {
+    // Imbas garisan gelap secara ringkas
+    for (
+        let y = 0;
+        y < canvasInput.height;
+        y += 4
+    ) {
 
-                const element =
-                    document.getElementById(
-                        field
-                    );
+        for (
+            let x = 0;
+            x < canvasInput.width;
+            x += 4
+        ) {
 
-
-                if (
-                    element &&
-                    measurements[field]
-                ) {
-
-                    element.value =
-                        measurements[field];
-                }
-            });
+            const index =
+                (y * canvasInput.width + x) * 4;
 
 
-            if (measurements.unit) {
+            const r = data[index];
+            const g = data[index + 1];
+            const b = data[index + 2];
 
-                unitSelect.value =
-                    measurements.unit;
+
+            const brightness =
+                (r + g + b) / 3;
 
 
-                document
-                    .querySelectorAll(
-                        ".unit-label"
-                    )
-                    .forEach((label) => {
+            if (brightness < 100) {
 
-                        label.textContent =
-                            measurements.unit;
-                    });
+                ctx.fillStyle = "rgba(0,255,0,0.75)";
+
+                ctx.fillRect(
+                    x,
+                    y,
+                    3,
+                    3
+                );
+
             }
 
-
-            measurementStatus.textContent =
-                "Ukuran terdahulu dimuatkan.";
-
-        } catch (error) {
-
-            console.log(
-                "Tiada data ukuran terdahulu."
-            );
         }
+
     }
 
-});
+}
+
+
+// =========================================================
+// 10. EVENT BUTTON
+// =========================================================
+
+startCamera.addEventListener(
+    "click",
+    startCameraFunction
+);
+
+
+stopCamera.addEventListener(
+    "click",
+    stopCameraFunction
+);
+
+
+captureImage.addEventListener(
+    "click",
+    captureImageFunction
+);
+
+
+// =========================================================
+// 11. INITIAL STATUS
+// =========================================================
+
+updateStatus(
+    "Kamera belum diaktifkan."
+);
