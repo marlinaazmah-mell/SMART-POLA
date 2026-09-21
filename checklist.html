@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SMART-POLA — Senarai Semak Deployment</title>
+<style>
+* {
+box-sizing: border-box;
+}
+body {
+margin: 0;
+font-family: Arial, sans-serif;
+background: #f4f5f7;
+color: #222;
+}
+.header {
+background: #111827;
+color: white;
+padding: 20px;
+}
+.header h1 {
+margin: 0;
+font-size: 24px;
+}
+.header p {
+margin: 6px 0 0;
+opacity: 0.8;
+}
+.container {
+width: min(860px, 94%);
+margin: 24px auto;
+}
+.card {
+background: white;
+padding: 20px;
+margin-bottom: 18px;
+border-radius: 14px;
+box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+.card h2 {
+margin-top: 0;
+font-size: 19px;
+}
+.description {
+color: #666;
+font-size: 14px;
+}
+button {
+border: none;
+padding: 12px 18px;
+border-radius: 8px;
+cursor: pointer;
+font-size: 15px;
+background: #111827;
+color: white;
+}
+button.secondary {
+background: #e5e7eb;
+color: #111827;
+}
+button:disabled {
+opacity: 0.5;
+cursor: not-allowed;
+}
+.status-line {
+margin: 8px 0 0;
+font-weight: bold;
+font-size: 14px;
+}
+.status-line .ok {
+color: #15803d;
+}
+.status-line .fail {
+color: #b91c1c;
+}
+.status-line .warn {
+color: #b45309;
+}
+.test-list {
+list-style: none;
+padding: 0;
+margin: 12px 0 0;
+font-size: 14px;
+}
+.test-list li {
+padding: 7px 10px;
+border-radius: 8px;
+margin-bottom: 6px;
+background: #f9fafb;
+border: 1px solid #e5e7eb;
+display: flex;
+justify-content: space-between;
+gap: 12px;
+}
+.test-list .value {
+font-family: monospace;
+color: #555;
+word-break: break-all;
+}
+.manual {
+list-style: none;
+padding: 0;
+margin: 12px 0 0;
+}
+.manual li {
+margin-bottom: 8px;
+}
+.manual label {
+display: flex;
+gap: 10px;
+align-items: flex-start;
+padding: 10px 12px;
+background: #f9fafb;
+border: 1px solid #e5e7eb;
+border-radius: 10px;
+cursor: pointer;
+font-size: 14px;
+}
+.manual input {
+margin-top: 2px;
+width: 18px;
+height: 18px;
+flex-shrink: 0;
+}
+a.back {
+display: inline-block;
+margin-top: 4px;
+color: #111827;
+font-weight: bold;
+text-decoration: none;
+background: #e5e7eb;
+padding: 10px 16px;
+border-radius: 8px;
+}
+@media (max-width: 600px) {
+.container {
+width: 100%;
+margin: 0;
+}
+.card {
+border-radius: 0;
+padding: 15px;
+}
+}
+</style>
+</head>
+<body>
+<header class="header">
+<h1>Senarai Semak Deployment</h1>
+<p>
+Halaman ujian kendiri SMART-POLA — jalankan halaman ini selepas memuat naik ke hosting.
+</p>
+</header>
+<main class="container">
+<!-- UJIAN AUTOMATIK -->
+<section class="card">
+<h2>1. Ujian Automatik</h2>
+<p class="description">
+Tekan butang untuk menguji persekitaran pelayan dan pelayar secara langsung — termasuk fail PWA.
+</p>
+<button type="button" id="runTestsButton">
+▶️ Jalankan Semua Ujian
+</button>
+<ul class="test-list" id="autoTestList">
+<li>Belum diuji.</li>
+</ul>
+</section>
+
+<!-- UJIAN KAMERA -->
+<section class="card">
+<h2>2. Ujian Kamera Sebenar</h2>
+<p class="description">
+Pelayar akan meminta kebenaran kamera. Kamera berfungsi hanya melalui HTTPS atau localhost.
+</p>
+<button type="button" id="cameraTestButton">
+📷 Uji Kamera
+</button>
+<div class="status-line" id="cameraTestResult">
+Belum diuji.
+</div>
+</section>
+
+<!-- UJIAN PWA -->
+<section class="card">
+<h2>3. Ujian PWA (Mod Offline)</h2>
+<p class="description">
+Service worker mendaftar selepas halaman kedua dimuatkan. Butang "Muat Semula &amp; Semak SW" memuatkan semula halaman supaya service worker mengawal halaman sebelum ujian dijalankan.
+</p>
+<button type="button" id="swTestButton">
+🔧 Muat Semula &amp; Semak SW
+</button>
+<div class="status-line" id="swTestResult">
+Belum diuji.
+</div>
+</section>
+
+<!-- SENARAI MANUAL -->
+<section class="card">
+<h2>4. Senarai Semak Manual</h2>
+<p class="description">
+Tandakan setiap langkah selepas selesai. Tandaan disimpan dalam pelayar ini.
+</p>
+<ul class="manual" id="manualChecklist">
+<li><label><input type="checkbox">
+Semua fail dimuat naik: <code>index.html</code>, <code>app.js</code>, <code>style.css</code>, <code>.htaccess</code>
+</label></li>
+<li><label><input type="checkbox">
+SSL/AutoSSL diaktifkan dalam cPanel dan <code>https://</code> berfungsi tanpa ralat sijil
+</label></li>
+<li><label><input type="checkbox">
+Jika guna Cloudflare/proxy: blok ubah hala HTTPS dalam <code>.htaccess</code> sudah dipadam (tiada redirect loop)
+</label></li>
+<li><label><input type="checkbox">
+<code>index.html</code> dibuka terus di domain (bukan di dalam subfolder tersarang yang salah)
+</label></li>
+<li><label><input type="checkbox">
+Halaman dibuka di telefon; kamera dibenarkan apabila diminta
+</label></li>
+<li><label><input type="checkbox">
+Ukuran badan disimpan dan sasaran dipaparkan di Seksyen 2
+</label></li>
+<li><label><input type="checkbox">
+Satu kitaran penuh berjaya: ambil gambar → tentukan skala → ukur → tambah → simpan ke Passport
+</label></li>
+<li><label><input type="checkbox">
+Kad penentukuran (<code>Calibration card.png</code>) dicetak untuk kegunaan pelajar
+</label></li>
+<li><label><input type="checkbox">
+PWA dipasang: menu pelayar → "Add to Home screen" / "Install", ikon muncul di skrin utama
+</label></li>
+<li><label><input type="checkbox">
+Ujian offline: aktifkan mod pesawat → buka SMART-POLA dari ikon → halaman &amp; aplikasi dimuatkan sepenuhnya
+</label></li>
+</ul>
+</section>
+
+<section class="card">
+<a class="back" href="index.html">← Kembali ke SMART-POLA</a>
+</section>
+</main>
+<script>
+(function () {
+"use strict";
+
+var runTestsButton = document.getElementById("runTestsButton");
+var autoTestList = document.getElementById("autoTestList");
+var cameraTestButton = document.getElementById("cameraTestButton");
+var cameraTestResult = document.getElementById("cameraTestResult");
+var swTestButton = document.getElementById("swTestButton");
+var swTestResult = document.getElementById("swTestResult");
+var manualChecklist = document.getElementById("manualChecklist");
+
+// ---------- Ujian automatik ----------
+function setRow(name, state, value) {
+var symbol = state === "ok" ? "✅" : (state === "fail" ? "❌" : "⚠️");
+return "<li><span>" + symbol + " " + name + "</span>" +
+"<span class=\"value\">" + value + "</span></li>";
+}
+
+function checkFile(path, validator) {
+return fetch(path, { cache: "no-store" }).then(function (res) {
+// 403 pada dotfile biasanya bermakna fail wujud tetapi dilindungi pelayan
+if (res.status === 403) {
+return { state: "warn", value: "wujud (403 dilindungi)" };
+}
+if (!res.ok) {
+return { state: "fail", value: "HTTP " + res.status };
+}
+return res.text().then(function (text) {
+if (validator && !validator(text)) {
+return { state: "fail", value: "kandungan tidak menepati" };
+}
+return { state: "ok", value: "OK" };
+});
+}).catch(function () {
+return { state: "fail", value: "tidak dapat diambil" };
+});
+}
+
+function runTests() {
+runTestsButton.disabled = true;
+autoTestList.innerHTML = "<li>Sedang menguji...</li>";
+
+var isLocal = location.hostname === "localhost" ||
+location.hostname === "127.0.0.1" ||
+location.protocol === "file:";
+
+var tests = [];
+
+// HTTPS
+if (location.protocol === "https:" || isLocal) {
+tests.push(Promise.resolve({
+name: "HTTPS / konteks selamat",
+state: location.protocol === "https:" ? "ok" : "warn",
+value: location.protocol
+}));
+} else {
+tests.push(Promise.resolve({
+name: "HTTPS / konteks selamat",
+state: "fail",
+value: location.protocol + " — kamera akan disekat"
+}));
+}
+
+// Kamera API
+tests.push(Promise.resolve({
+name: "API kamera (mediaDevices)",
+state: navigator.mediaDevices && navigator.mediaDevices.getUserMedia ? "ok" : "fail",
+value: navigator.mediaDevices ? "tersedia" : "tiada"
+}));
+
+// localStorage
+var storageState = "ok";
+var storageValue = "berfungsi";
+try {
+localStorage.setItem("smartpola_test", "1");
+storageValue = localStorage.getItem("smartpola_test") === "1" ? "berfungsi" : "tidak konsisten";
+localStorage.removeItem("smartpola_test");
+} catch (e) {
+storageState = "fail";
+storageValue = "disekat (mode incognito / dasar pelayar)";
+}
+tests.push(Promise.resolve({
+name: "localStorage (penyimpanan data)",
+state: storageState,
+value: storageValue
+}));
+
+// Fail aplikasi
+tests.push(checkFile("index.html", function (t) {
+return t.indexOf("SMART-POLA") !== -1;
+}).then(function (r) { r.name = "index.html"; return r; }));
+
+tests.push(checkFile("app.js", function (t) {
+return t.indexOf("SMART-POLA") !== -1;
+}).then(function (r) { r.name = "app.js"; return r; }));
+
+tests.push(checkFile("style.css", function (t) {
+return t.indexOf("measurement-grid") !== -1;
+}).then(function (r) { r.name = "style.css"; return r; }));
+
+tests.push(checkFile(".htaccess").then(function (r) {
+r.name = ".htaccess";
+if (r.state === "fail") {
+r.state = "warn";
+r.value = "tiada (apps masih berfungsi; HTTPS perlu dipaksa secara manual)";
+}
+return r;
+}));
+
+tests.push(checkFile("Calibration card.png").then(function (r) {
+r.name = "Calibration card.png";
+if (r.state === "fail") {
+r.state = "warn";
+r.value = "tiada (kad perlu dicetak untuk pelajar)";
+}
+return r;
+}));
+
+// PWA: manifest, ikon, service worker
+tests.push(checkFile("manifest.json", function (t) {
+try {
+var manifest = JSON.parse(t);
+return manifest.name && manifest.icons && manifest.icons.length > 0;
+} catch (e) {
+return false;
+}
+}).then(function (r) { r.name = "manifest.json (PWA)"; return r; }));
+
+tests.push(checkFile("icon.svg", function (t) {
+return t.indexOf("<svg") !== -1;
+}).then(function (r) { r.name = "icon.svg (PWA)"; return r; }));
+
+tests.push(checkFile("sw.js", function (t) {
+return t.indexOf("CACHE_NAME") !== -1;
+}).then(function (r) { r.name = "sw.js (service worker)"; return r; }));
+
+Promise.all(tests).then(function (results) {
+autoTestList.innerHTML = results.map(function (r) {
+return setRow(r.name, r.state, r.value);
+}).join("");
+runTestsButton.disabled = false;
+});
+}
+
+// ---------- Ujian kamera ----------
+function runCameraTest() {
+cameraTestButton.disabled = true;
+cameraTestResult.innerHTML = "<span class=\"warn\">⏳ Meminta kebenaran kamera...</span>";
+
+if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+cameraTestResult.innerHTML = "<span class=\"fail\">❌ API kamera tiada — pastikan laman diakses melalui HTTPS.</span>";
+cameraTestButton.disabled = false;
+return;
+}
+
+navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false })
+.then(function (stream) {
+stream.getTracks().forEach(function (track) { track.stop(); });
+cameraTestResult.innerHTML = "<span class=\"ok\">✅ Kamera berfungsi. Kebenaran diberikan.</span>";
+cameraTestButton.disabled = false;
+})
+.catch(function (error) {
+cameraTestResult.innerHTML =
+"<span class=\"fail\">❌ Kamera gagal: " + error.name +
+"</span> — semak kebenaran pelayar dan pastikan HTTPS aktif.";
+cameraTestButton.disabled = false;
+});
+}
+
+// ---------- Senarai manual (disimpan) ----------
+var MANUAL_KEY = "smartpola_checklist";
+
+function loadManualState() {
+var saved;
+try {
+saved = JSON.parse(localStorage.getItem(MANUAL_KEY) || "[]");
+} catch (e) {
+saved = [];
+}
+var boxes = manualChecklist.querySelectorAll("input[type=\"checkbox\"]");
+boxes.forEach(function (box, index) {
+box.checked = saved[index] === true;
+box.addEventListener("change", saveManualState);
+});
+}
+
+function saveManualState() {
+var boxes = manualChecklist.querySelectorAll("input[type=\"checkbox\"]");
+var state = [];
+boxes.forEach(function (box) {
+state.push(box.checked);
+});
+try {
+localStorage.setItem(MANUAL_KEY, JSON.stringify(state));
+} catch (e) {
+// abaikan
+}
+}
+
+// ---------- Ujian service worker ----------
+function runSwTest() {
+swTestButton.disabled = true;
+swTestResult.innerHTML = "<span class=\"warn\">⏳ Menyemak service worker...</span>";
+if (!("serviceWorker" in navigator)) {
+swTestResult.innerHTML = "<span class=\"fail\">❌ Pelayar tidak menyokong service worker.</span>";
+swTestButton.disabled = false;
+return;
+}
+navigator.serviceWorker.getRegistrations().then(function (regs) {
+if (regs.length === 0) {
+swTestResult.innerHTML =
+"<span class=\"warn\">⚠️ Service worker belum berdaftar. Muat semula halaman sekali lagi, kemudian cuba semula.</span>";
+} else {
+var scopeList = regs.map(function (reg) { return reg.scope; }).join("<br>");
+swTestResult.innerHTML = "<span class=\"ok\">✅ Service worker aktif (" + regs.length + "):</span><br>" +
+"<span class=\"value\">" + scopeList + "</span>";
+}
+swTestButton.disabled = false;
+}).catch(function (err) {
+swTestResult.innerHTML = "<span class=\"fail\">❌ Gagal semak SW: " + err.message + "</span>";
+swTestButton.disabled = false;
+});
+}
+
+runTestsButton.addEventListener("click", runTests);
+cameraTestButton.addEventListener("click", runCameraTest);
+swTestButton.addEventListener("click", runSwTest);
+loadManualState();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="96" fill="#111827"/>
+  <g fill="none" stroke="#ffffff" stroke-width="18" stroke-linecap="round" stroke-linejoin="round">
+    <!-- badan depan: leher V + bahu -->
+    <path d="M 150 110 L 256 210 L 362 110"/>
+    <path d="M 150 110 L 118 190 L 150 402 L 362 402 L 394 190 L 362 110"/>
+    <!-- garisan pola terputus-putus -->
+    <path d="M 190 250 L 322 250" stroke-dasharray="18 14" stroke="#22d3ee" stroke-width="14"/>
+    <path d="M 190 320 L 322 320" stroke-dasharray="18 14" stroke="#22d3ee" stroke-width="14"/>
+  </g>
+  <circle cx="256" cy="130" r="16" fill="#22d3ee"/>
+</svg>

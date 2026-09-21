@@ -1,26 +1,11 @@
-function bukaKamera() {
-    document.getElementById("gambarPola").click();
-}
-
-function paparGambar(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    const gambar = document.getElementById("previewPola");
-    const canvas = document.getElementById("canvasPola");
-    const status = document.getElementById("statusKamera");
-
-    const reader = new FileReader();
-
-    reader.onload = function(e) {
-        gambar.src = e.target.result;
-        gambar.style.display = "block";
-
-        // Sembunyikan hasil lama
-        canvas.style.display = "none";
-
-        status.innerHTML = "🟢 Gambar pola berjaya dimuat naik.";
-    };
-
-    reader.readAsDataURL(file);
-}
+// =========================================================
+// [DEPRECATED] kamera.js
+// =========================================================
+// Fail ini adalah sisa versi lama SMART-POLA. Fungsi muat naik
+// gambar kini digabungkan terus dalam app.js (Seksyen Imbas Pola).
+//
+// Fungsi lama (bukaKamera, paparGambar) merujuk kepada elemen
+// HTML (gambarPola, previewPola, canvasPola, statusKamera) yang
+// tidak lagi wujud dalam index.html, maka fail ini TIDAK dimuatkan
+// oleh mana-mana halaman dan selamat dihapuskan.
+console.warn("kamera.js tidak digunakan. Lihat app.js.");

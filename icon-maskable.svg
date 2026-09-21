@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" fill="#111827"/>
+  <g fill="none" stroke="#ffffff" stroke-width="16" stroke-linecap="round" stroke-linejoin="round">
+    <!-- versi lebih kecil untuk zon selamat maskable (kandungan dalam 80% tengah) -->
+    <path d="M 176 146 L 256 226 L 336 146"/>
+    <path d="M 176 146 L 150 212 L 176 380 L 336 380 L 362 212 L 336 146"/>
+    <path d="M 204 270 L 308 270" stroke-dasharray="16 12" stroke="#22d3ee" stroke-width="12"/>
+    <path d="M 204 330 L 308 330" stroke-dasharray="16 12" stroke="#22d3ee" stroke-width="12"/>
+  </g>
+  <circle cx="256" cy="160" r="13" fill="#22d3ee"/>
+</svg>

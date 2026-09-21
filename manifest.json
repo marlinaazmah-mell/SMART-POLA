@@ -1,0 +1,26 @@
+{
+  "name": "SMART-POLA",
+  "short_name": "SMART-POLA",
+  "description": "Sistem Semakan Pola Pakaian Berasaskan AI untuk latihan fesyen TVET.",
+  "lang": "ms",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f4f5f7",
+  "theme_color": "#111827",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-maskable.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}

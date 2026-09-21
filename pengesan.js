@@ -1,53 +1,12 @@
-function kesanGarisan() {
-
-    const gambar = document.getElementById("previewPola");
-    const canvas = document.getElementById("canvasPola");
-    const status = document.getElementById("statusKamera");
-
-    if (!gambar.src) {
-        status.innerHTML = "⚠️ Muat naik gambar pola dahulu.";
-        return;
-    }
-
-    if (typeof cv === "undefined") {
-        status.innerHTML = "🔴 OpenCV belum dimuatkan.";
-        return;
-    }
-
-    status.innerHTML = "🔎 Sedang mengesan garisan...";
-
-    const proses = () => {
-
-        canvas.width = gambar.naturalWidth;
-        canvas.height = gambar.naturalHeight;
-
-        const ctx = canvas.getContext("2d");
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(gambar, 0, 0, canvas.width, canvas.height);
-
-        let src = cv.imread(canvas);
-        let gray = new cv.Mat();
-        let blur = new cv.Mat();
-        let edges = new cv.Mat();
-
-        cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
-        cv.GaussianBlur(gray, blur, new cv.Size(5,5), 0);
-        cv.Canny(blur, edges, 80, 180);
-
-        cv.imshow(canvas, edges);
-        canvas.style.display = "block";
-
-        src.delete();
-        gray.delete();
-        blur.delete();
-        edges.delete();
-
-        status.innerHTML = "🟢 Garisan tepi telah dikesan.";
-    };
-
-    if (gambar.complete && gambar.naturalWidth > 0) {
-        proses();
-    } else {
-        gambar.onload = proses;
-    }
-}
+// =========================================================
+// [DEPRECATED] pengesan.js
+// =========================================================
+// Fail ini adalah sisa versi lama SMART-POLA yang bergantung
+// kepada OpenCV.js (cv.imread, cv.Canny). Elemen HTML yang
+// dirujuk (previewPola, canvasPola, statusKamera) tidak lagi
+// wujud dalam index.html, dan OpenCV.js telah dibuang daripada
+// halaman kerana terlalu berat untuk dimuatkan.
+//
+// Pengesanan garisan kini dilaksanakan secara ringkas dalam
+// app.js tanpa OpenCV (analisis piksel gelap + ukur automatik).
+console.warn("pengesan.js tidak digunakan. Lihat app.js.");
