@@ -17,6 +17,7 @@ const measurementInputs = {
   hip: document.getElementById("hip"),
   neck: document.getElementById("neck"),
   backLength: document.getElementById("backLength"),
+  sleeveLength: document.getElementById("sleeveLength"),
   labuhSkirt: document.getElementById("labuhSkirt")
 };
 const saveMeasurementsBtn = document.getElementById("saveMeasurements");
