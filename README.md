@@ -9,7 +9,12 @@ dan rekod pencapaian (Smart-POLA Passport).
 
 ## Ciri (V4.0)
 1. **Data Ukuran Badan** — 7 ukuran (bahu, dada, pinggang, pinggul, leher, labuh belakang, labuh kain/seluar). Unit cm/inci — **unit dipilih digunakan seragam di seluruh aplikasi**: medan input, simbol, sasaran, formula, ukuran pola, jadual semakan, keputusan dan Passport. Nilai disimpan secara dalaman dalam cm dan ditukar paparan secara automatik. Disimpan dalam `localStorage`.
-2. **Tetapan Pola** — pilih jenis pakaian (baju/kain/seluar/lain) dan bahagian pola. Sasaran dikira secara automatik (¼ bagi ukuran keliling, 1:1 bagi panjang) dengan toleransi ±0.5 cm.
+2. **Tetapan Pola** — pilih jenis pakaian (Baju/Skirt/Seluar/Dress) dan bahagian pola:
+   - **Baju:** Badan Hadapan, Badan Belakang, Lengan, Kolar, Manset
+   - **Skirt:** Skirt Hadapan, Skirt Belakang, Ben Pinggang
+   - **Seluar:** Seluar Hadapan, Seluar Belakang, Ben Pinggang
+   - **Dress:** Badan Hadapan, Badan Belakang
+   Sasaran ukuran dimasukkan **secara manual** bagi setiap bahagian pola (disimpan dalam `localStorage`, unit cm/inci ikut pilihan unit) dengan toleransi ±0.5 cm.
 3. **Imbas Pola** — kamera belakang telefon, ambil gambar pola, **pengesanan garisan sebenar**: grayscale → Gaussian blur → Sobel edge detection → ambang adaptif → penutupan morfologi (sambung garisan putus-putus) → komponen bersambung. Tepi pola dipaparkan hijau, kotak sempadan oren, dengan 3 butiran ukuran (lebar / garisan terpanjang / tinggi) yang boleh dipilih sebagai ukuran automatik.
 4. **Penentukuran** — kad hitam dikesan secara automatik dalam gambar; masukkan lebar kad sebenar (cm) untuk mendapatkan skala cm/piksel. Jika kad gagal dikesan, ukuran relatif masih boleh dibandingkan.
 5. **Ukur Pola** — dua cara:
@@ -100,7 +105,7 @@ diperlukan**. Ia boleh dihoskan pada mana-mana pelayan web biasa.
 
 ## Aliran Penggunaan
 1. Isi dan **Simpan Ukuran** (Seksyen 1).
-2. Pilih **Jenis Pakaian** dan **Bahagian Pola** — sasaran dipaparkan (Seksyen 2).
+2. Pilih **Jenis Pakaian** dan **Bahagian Pola**, kemudian masukkan **Sasaran Ukuran** dan tekan **🎯 Simpan Sasaran** (Seksyen 2).
 3. **Mula Kamera** → letakkan pola + kad hitam → **Ambil Gambar** (Seksyen 3).
 4. Masukkan lebar kad sebenar → **Tentukan Skala**.
 5. Klik dua titik pada gambar pola (atau tekan **Ukur Automatik**).

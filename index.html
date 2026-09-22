@@ -185,7 +185,7 @@ class="status">
 <section class="card">
 <h2>2. Tetapan Pola</h2>
 <p class="description">
-Pilih jenis pakaian dan bahagian pola yang hendak disemak. Sasaran ukuran dikira daripada data ukuran badan.
+Pilih jenis pakaian dan bahagian pola yang hendak disemak, kemudian masukkan sasaran ukuran secara manual.
 </p>
 <div class="pattern-selection">
 <!-- JENIS PAKAIAN -->
@@ -202,14 +202,14 @@ name="garmentType">
 <option value="baju">
 Baju
 </option>
-<option value="kain">
-Kain (Skirt)
+<option value="skirt">
+Skirt
 </option>
 <option value="seluar">
 Seluar
 </option>
-<option value="lain">
-Lain-lain
+<option value="dress">
+Dress
 </option>
 </select>
 </div>
@@ -230,7 +230,28 @@ disabled>
 </div>
 <!-- SASARAN -->
 <div class="target-info" id="targetInfo">
-Sasaran ukuran akan dipaparkan di sini selepas ukuran badan disimpan dan bahagian pola dipilih.
+Pilih bahagian pola, kemudian masukkan sasaran ukuran secara manual.
+</div>
+<!-- SASARAN MANUAL -->
+<div class="pattern-field" id="targetInputGroup" style="display:none;">
+<label for="targetInput">
+Sasaran Ukuran (<span class="unit-label">cm</span>)
+</label>
+<div class="calibration-row">
+<input
+type="number"
+id="targetInput"
+step="0.01"
+min="0"
+placeholder="Cth: 25.00">
+<button
+type="button"
+class="primary-button"
+id="saveTargetButton">
+🎯 Simpan Sasaran
+</button>
+</div>
+<div id="targetStatus" class="status"></div>
 </div>
 <div
 id="patternSelectionStatus"
@@ -534,7 +555,7 @@ SMART-POLA © 2026 · <a href="checklist.html">Senarai Semak Deployment</a>
 <!-- ================================
 JAVASCRIPT
 ================================ -->
-<script src="app.js?v=4.1.2"></script>
+<script src="app.js?v=4.2.0"></script>
 <script>
 // Service Worker + pemasangan PWA
 if ("serviceWorker" in navigator) {

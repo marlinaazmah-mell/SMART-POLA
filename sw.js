@@ -7,8 +7,8 @@
 //   - Lain-lain (kad penentukuran): cache-first
 // Naikkan CACHE_NAME + versi ?v= dalam index.html setiap kemas kini.
 // =========================================================
-const CACHE_NAME = "smartpola-v4.1.2";
-const APP_VERSION = "4.1.2";
+const CACHE_NAME = "smartpola-v4.2.0";
+const APP_VERSION = "4.2.0";
 const PRECACHE = [
   "./",
   "./index.html",

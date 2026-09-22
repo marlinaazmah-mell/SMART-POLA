@@ -1,5 +1,5 @@
 // =========================================================
-// SMART-POLA V4.1.2
+// SMART-POLA V4.2.0
 // Pengesanan garisan pola SEBENAR (Sobel + komponen bersambung),
 // multi-keping + nama keping + label dimensi, penentukuran kad
 // hitam, ukur manual 2 titik & automatik, semakan multi-baris,
@@ -26,6 +26,10 @@ const garmentType = document.getElementById("garmentType");
 const patternPart = document.getElementById("patternPart");
 const targetInfo = document.getElementById("targetInfo");
 const patternSelectionStatus = document.getElementById("patternSelectionStatus");
+const targetInputGroup = document.getElementById("targetInputGroup");
+const targetInput = document.getElementById("targetInput");
+const saveTargetButton = document.getElementById("saveTargetButton");
+const targetStatus = document.getElementById("targetStatus");
 
 const camera = document.getElementById("camera");
 const cameraContainer = document.getElementById("cameraContainer");
@@ -92,33 +96,28 @@ const PIECE_COLORS = ["#22d3ee", "#f59e0b", "#a78bfa", "#34d399", "#f472b6", "#f
 
 const PATTERN_PARTS = {
   baju: [
-    { value: "shoulder", label: "Lebar Bahu" },
-    { value: "chest", label: "Keliling Dada (÷4)" },
-    { value: "waist", label: "Keliling Pinggang (÷4)" },
-    { value: "hip", label: "Keliling Pinggul (÷4)" },
-    { value: "neck", label: "Keliling Leher" },
-    { value: "backLength", label: "Labuh Tengah Belakang" }
+    { value: "badan-hadapan", label: "Badan Hadapan" },
+    { value: "badan-belakang", label: "Badan Belakang" },
+    { value: "lengan", label: "Lengan" },
+    { value: "kolar", label: "Kolar" },
+    { value: "manset", label: "Manset" }
   ],
-  kain: [
-    { value: "waist", label: "Lebar Pinggang Kain (÷4)" },
-    { value: "hip", label: "Lebar Pinggul Kain (÷4)" },
-    { value: "labuhSkirt", label: "Labuh Kain" }
+  skirt: [
+    { value: "skirt-hadapan", label: "Skirt Hadapan" },
+    { value: "skirt-belakang", label: "Skirt Belakang" },
+    { value: "ben-pinggang", label: "Ben Pinggang" }
   ],
   seluar: [
-    { value: "waist", label: "Lebar Pinggang Seluar (÷4)" },
-    { value: "hip", label: "Lebar Punggung Seluar (÷4)" },
-    { value: "labuhSkirt", label: "Panjang Seluar" }
+    { value: "seluar-hadapan", label: "Seluar Hadapan" },
+    { value: "seluar-belakang", label: "Seluar Belakang" },
+    { value: "ben-pinggang", label: "Ben Pinggang" }
   ],
-  lain: [
-    { value: "shoulder", label: "Lebar Bahu" },
-    { value: "chest", label: "Keliling Dada (÷4)" },
-    { value: "waist", label: "Keliling Pinggang (÷4)" },
-    { value: "hip", label: "Keliling Pinggul (÷4)" },
-    { value: "labuhSkirt", label: "Panjang Pola" }
+  dress: [
+    { value: "badan-hadapan", label: "Badan Hadapan" },
+    { value: "badan-belakang", label: "Badan Belakang" }
   ]
 };
 
-const QUARTER_PARTS = ["chest", "waist", "hip"];
 const TOLERANCE = 0.5; // cm
 
 const STORAGE_KEYS = {
@@ -126,7 +125,8 @@ const STORAGE_KEYS = {
   calibration: "smartpola_calibration",
   passport: "smartpola_passport",
   sensitivity: "smartpola_sensitivity",
-  pieceNames: "smartpola_piece_names"
+  pieceNames: "smartpola_piece_names",
+  manualTargets: "smartpola_manual_targets"
 };
 
 // =========================================================
@@ -292,51 +292,94 @@ function populatePatternParts() {
   refreshTargetInfo();
 }
 
-function computeTargets() {
-  if (!measurements) return null;
-  const targets = {};
-  for (const key of Object.keys(measurements)) {
-    const cm = measurements[key];
-    if (cm === null || cm === undefined) continue;
-    targets[key] = QUARTER_PARTS.includes(key) ? cm / 4 : cm;
-  }
-  if (measurements.hip !== null && measurements.hip !== undefined) {
-    targets.hip = measurements.hip / 4;
-  }
-  return targets;
+// =========================================================
+// SASARAN MANUAL
+// =========================================================
+let manualTargets = {}; // { "baju/badan-hadapan": cm, ... }
+let currentTargetKey = null; // "baju/badan-hadapan"
+
+function getTargetKey(type, part) {
+  return `${type}/${part}`;
+}
+
+function loadManualTargets() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEYS.manualTargets) || "{}");
+    if (saved && typeof saved === "object") {
+      manualTargets = saved;
+    }
+  } catch (e) { /* abaikan */ }
+}
+
+function saveManualTargets() {
+  try {
+    localStorage.setItem(STORAGE_KEYS.manualTargets, JSON.stringify(manualTargets));
+  } catch (e) { /* abaikan */ }
 }
 
 function refreshTargetInfo() {
   const type = garmentType.value;
   const part = patternPart.value;
-  if (!measurements || !type || !part) {
-    if (!measurements) {
-      targetInfo.textContent =
-        "Sasaran ukuran akan dipaparkan di sini selepas ukuran badan disimpan dan bahagian pola dipilih.";
-    } else {
-      targetInfo.textContent = "Pilih bahagian pola untuk melihat sasaran ukuran.";
-    }
-    return;
+
+  // Sorok/munculkan medan input sasaran manual
+  if (targetInputGroup) {
+    targetInputGroup.style.display = (type && part) ? "block" : "none";
   }
 
-  const targets = computeTargets();
-  const cm = targets[part];
-  if (cm === undefined) {
-    targetInfo.textContent = "⚠️ Ukuran badan bagi bahagian ini belum diisi. Sila lengkapkan Seksyen 1.";
+  if (!type || !part) {
+    targetInfo.textContent =
+      "Sasaran ukuran akan dipaparkan di sini selepas bahagian pola dipilih dan sasaran dimasukkan.";
     updateFormulaDetail(null);
+    if (targetInput) targetInput.value = "";
+    updateCheckButtons();
     return;
   }
 
+  currentTargetKey = getTargetKey(type, part);
   const partLabel = getPartLabel(type, part);
-  const isQuarter = QUARTER_PARTS.includes(part);
-  const formulaText = isQuarter
-    ? `${partLabel} = ukuran badan ÷ 4 = ${fmtCm(cm)} (toleransi ±${fmtCm(TOLERANCE)})`
-    : `${partLabel} = ukuran badan = ${fmtCm(cm)} (toleransi ±${fmtCm(TOLERANCE)})`;
+  const saved = manualTargets[currentTargetKey];
+
+  if (saved === undefined || saved === null || isNaN(saved)) {
+    targetInfo.textContent = `⚠️ Sasaran bagi ${partLabel} belum dimasukkan. Sila isikan di bawah.`;
+    updateFormulaDetail(null);
+    if (targetInput) targetInput.value = "";
+    updateCheckButtons();
+    return;
+  }
 
   targetInfo.innerHTML =
-    `🎯 <strong>Sasaran ${partLabel}:</strong> ${fmtCm(cm)} (toleransi ±${fmtCm(TOLERANCE)})`;
-  updateFormulaDetail(formulaText);
+    `🎯 <strong>Sasaran ${partLabel}:</strong> ${fmtCm(saved)} (toleransi ±${fmtCm(TOLERANCE)})`;
+  if (targetInput) targetInput.value = String(Math.round(cmToDisplay(saved) * 100) / 100);
+  updateFormulaDetail(
+    `${partLabel} = sasaran manual = ${fmtCm(saved)} (toleransi ±${fmtCm(TOLERANCE)})`
+  );
   updateCheckButtons();
+}
+
+function saveTargetFunction() {
+  const type = garmentType.value;
+  const part = patternPart.value;
+  if (!type || !part) {
+    if (targetStatus) targetStatus.textContent = "⚠️ Pilih jenis pakaian dan bahagian pola dahulu.";
+    return;
+  }
+  const raw = targetInput ? targetInput.value.trim() : "";
+  const num = parseFloat(raw);
+  if (raw === "" || isNaN(num) || num < 0) {
+    if (targetStatus) targetStatus.textContent = "⚠️ Sila masukkan sasaran nombor yang sah.";
+    return;
+  }
+  // Simpan secara dalaman dalam cm (konsisten dengan ukuran badan)
+  const cm = getDisplayUnit() === "in" ? num * 2.54 : num;
+  const key = getTargetKey(type, part);
+  manualTargets[key] = cm;
+  saveManualTargets();
+
+  const partLabel = getPartLabel(type, part);
+  if (targetStatus) {
+    targetStatus.textContent = `🟢 Sasaran ${partLabel} = ${fmtCm(cm)} disimpan.`;
+  }
+  refreshTargetInfo();
 }
 
 function getPartLabel(type, part) {
@@ -1138,7 +1181,9 @@ function renamePieceFunction() {
 // 13. SEMAKAN UKURAN (multi-baris)
 // =========================================================
 function updateCheckButtons() {
-  const ready = measurements && garmentType.value && patternPart.value;
+  const key = getTargetKey(garmentType.value, patternPart.value);
+  const hasTarget = manualTargets[key] !== undefined && manualTargets[key] !== null && !isNaN(manualTargets[key]);
+  const ready = garmentType.value && patternPart.value && hasTarget;
   if (manualCheckButton) {
     manualCheckButton.disabled = !(ready && autoMeasure && autoMeasure.ok);
   }
@@ -1161,8 +1206,8 @@ function resetMeasurement() {
 function runCheck() {
   const type = garmentType.value;
   const part = patternPart.value;
-  if (!measurements || !type || !part) {
-    updateStatus("⚠️ Lengkapkan ukuran badan dan pilih bahagian pola dahulu.");
+  if (!type || !part) {
+    updateStatus("⚠️ Pilih jenis pakaian dan bahagian pola dahulu.");
     return;
   }
   if (!autoMeasure || !autoMeasure.ok) {
@@ -1170,10 +1215,9 @@ function runCheck() {
     return;
   }
 
-  const targets = computeTargets();
-  const target = targets[part];
-  if (target === undefined) {
-    updateStatus("⚠️ Ukuran badan bagi bahagian ini belum diisi.");
+  const target = manualTargets[getTargetKey(type, part)];
+  if (target === undefined || target === null || isNaN(target)) {
+    updateStatus("⚠️ Sasaran ukuran belum dimasukkan. Sila isikan sasaran manual di Seksyen 2.");
     return;
   }
 
@@ -1380,7 +1424,9 @@ safeListen(garmentType, "change", () => {
 safeListen(patternPart, "change", () => {
   resetMeasurement();
   refreshTargetInfo();
+  if (targetStatus) targetStatus.textContent = "";
 });
+safeListen(saveTargetButton, "click", saveTargetFunction);
 
 safeListen(cameraButton, "click", onCameraButtonClick);
 safeListen(flipCameraButton, "click", flipCameraFunction);
@@ -1449,6 +1495,7 @@ try {
 } catch (e) { /* abaikan */ }
 if (edgeSensitivity) edgeSensitivity.value = String(sensitivity);
 if (sensitivityValue) sensitivityValue.textContent = String(sensitivity);
+loadManualTargets();
 loadSavedMeasurements();
 populatePatternParts();
 renderPassport();
