@@ -19,7 +19,7 @@ const measurementInputs = {
   backLength: document.getElementById("backLength"),
   labuhSkirt: document.getElementById("labuhSkirt"), 
   sleeveLength: document.getElementById("sleeveLength"),
-  bukaanTangan: document.getElementById("bukaanTangan"),
+  bukaanTangan: document.getElementById("bukaanTangan")
 };
 const saveMeasurementsBtn = document.getElementById("saveMeasurements");
 const measurementStatus = document.getElementById("measurementStatus");
