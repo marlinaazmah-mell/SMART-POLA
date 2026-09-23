@@ -11,14 +11,14 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="SMART-POLA">
 <title>SMART-POLA</title>
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=5.1.0">
 </head>
 <body>
 <!-- ================================
 HEADER
 ================================ -->
 <header class="header">
-<h1>SMART-POLA</h1>
+<h1>SMART-POLA <span id="versionBadge" style="display:inline-block;font-size:12px;font-weight:normal;vertical-align:middle;background:rgba(255,255,255,0.25);border-radius:8px;padding:2px 8px;margin-left:6px;"></span></h1>
 <p>
 Sistem Semakan Pola Pakaian Berasaskan AI
 </p>
@@ -150,7 +150,24 @@ cm
 </span>
 </div>
 </div>
- <div class="measurement">
+<div class="measurement">
+<label for="labuhBaju">
+Labuh Baju
+</label>
+<div class="input-unit">
+<input
+type="number"
+id="labuhBaju"
+step="0.1"
+min="0"
+placeholder="Contoh: 60"
+>
+<span class="unit-label">
+cm
+</span>
+</div>
+</div>
+<div class="measurement">
 <label for="labuhSkirt">
 Labuh Kain / Seluar
 </label>
@@ -158,6 +175,23 @@ Labuh Kain / Seluar
 <input
 type="number"
 id="labuhSkirt"
+step="0.1"
+min="0"
+placeholder="Contoh: 60"
+>
+<span class="unit-label">
+cm
+</span>
+</div>
+</div>
+<div class="measurement">
+<label for="labuhLengan">
+Labuh Lengan
+</label>
+<div class="input-unit">
+<input
+type="number"
+id="labuhLengan"
 step="0.1"
 min="0"
 placeholder="Contoh: 55"
@@ -168,23 +202,6 @@ cm
 </div>
 </div>
 <div class="measurement">
-<label for="sleeveLength">
-Labuh Lengan
-</label>
-<div class="input-unit">
-<input
-type="number"
-id="sleeveLength"
-step="0.1"
-min="0"
-placeholder="Contoh: 60"
->
-<span class="unit-label">
-cm
-</span>
-</div>
-</div>
- <div class="measurement">
 <label for="bukaanTangan">
 Bukaan Tangan
 </label>
@@ -219,7 +236,7 @@ class="status">
 <section class="card">
 <h2>2. Tetapan Pola</h2>
 <p class="description">
-Pilih jenis pakaian dan bahagian pola yang hendak disemak, kemudian masukkan sasaran ukuran secara manual.
+Pilih jenis pakaian dan bahagian pola — formula pola (ukuran yang telah dibahagi) dipaparkan automatik daripada ukuran badan (Seksyen 1).
 </p>
 <div class="pattern-selection">
 <!-- JENIS PAKAIAN -->
@@ -262,30 +279,14 @@ disabled>
 </select>
 </div>
 </div>
-<!-- SASARAN -->
-<div class="target-info" id="targetInfo">
-Pilih bahagian pola, kemudian masukkan sasaran ukuran secara manual.
+<!-- FORMULA: dipaparkan selepas Bahagian Pola dipilih -->
+<div class="formula-box">
+<h3>Formula Pola (Ukuran Dibahagi)</h3>
+<div
+id="formulaDetail"
+class="formula-detail">
+Belum tersedia
 </div>
-<!-- SASARAN MANUAL -->
-<div class="pattern-field" id="targetInputGroup" style="display:none;">
-<label for="targetInput">
-Sasaran Ukuran (<span class="unit-label">cm</span>)
-</label>
-<div class="calibration-row">
-<input
-type="number"
-id="targetInput"
-step="0.01"
-min="0"
-placeholder="Cth: 25.00">
-<button
-type="button"
-class="primary-button"
-id="saveTargetButton">
-🎯 Simpan Sasaran
-</button>
-</div>
-<div id="targetStatus" class="status"></div>
 </div>
 <div
 id="patternSelectionStatus"
@@ -298,7 +299,7 @@ class="status">
 <section class="card">
 <h2>3. Imbas Pola</h2>
 <p class="description">
-Letakkan pola di atas permukaan rata bersama kad penentukuran hitam, kemudian ambil gambar dari terus di atas pola.
+Letakkan pola di atas permukaan rata bersama kad penentukuran hitam 10 cm × 10 cm, kemudian ambil gambar dari terus di atas pola. Skala dikira automatik sejurus gambar diambil — ukuran pola dipaparkan serta-merta di Seksyen 4.
 </p>
 <div class="camera-container" id="cameraContainer">
 <video
@@ -328,36 +329,7 @@ id="cameraButton">
 📷 Buka Kamera
 </button>
 </div>
-<!-- PENENTUKURAN -->
-<div class="calibration-box">
-<h3>Penentukuran Skala (Calibration)</h3>
-<p>
-Kad penentukuran dikesan secara automatik daripada segi empat hitam dalam gambar. Masukkan lebar kad yang dicetak untuk mendapatkan skala cm/piksel.
-</p>
-<div class="calibration-row">
-<label for="calibrationWidth">
-Lebar kad penentukuran (<span id="calibrationUnitLabel">cm</span>)
-</label>
-<input
-type="number"
-id="calibrationWidth"
-step="0.01"
-min="0"
-placeholder="Contoh: 5.00"
->
-</div>
-<button
-type="button"
-class="secondary-button"
-id="calibrateButton"
-disabled>
-Tentukan Skala
-</button>
-<div
-id="calibrationStatus"
-class="status">
-</div>
-</div>
+<!-- PENENTUKURAN: automatik melalui kad 10 cm × 10 cm (tiada paparan) -->
 <!-- HASIL GAMBAR POLA -->
 <div class="captured-pattern">
 <h3>Gambar Pola</h3>
@@ -392,7 +364,7 @@ Kamera belum diaktifkan.
 <section class="card">
 <h2>4. Analisis Pola</h2>
 <p class="description">
-Ukur pola sama ada secara automatik (sempadan imej) atau dengan mengklik dua titik pada gambar pola di atas (titik mula dan titik tamat).
+Ukur pola secara automatik (ukuran pertama dipaparkan sendiri selepas gambar diambil) atau dengan mengklik dua titik pada gambar pola di atas. Skala dikira daripada kad penentukuran 10 cm × 10 cm — jika kurang tepat, klik dua hujung kad pada gambar dan tekan 🔄 Muat Semula Skala.
 </p>
 <div class="analysis-grid">
 <div class="analysis-item">
@@ -450,15 +422,7 @@ placeholder="Nama keping (cth: Depan, Lengan)">
 <button type="button" class="chip" id="chipWidth">📏 Terpanjang: —</button>
 <button type="button" class="chip" id="chipHeight">↕️ Tinggi: —</button>
 </div>
-<!-- FORMULA -->
-<div class="formula-box">
-<h3>Formula Sasaran</h3>
-<div
-id="formulaDetail"
-class="formula-detail">
-Belum tersedia
-</div>
-</div><!-- TINDAKAN -->
+<!-- TINDAKAN -->
 <div class="check-actions">
 <button
  type="button"
@@ -466,6 +430,18 @@ Belum tersedia
  id="manualCheckButton"
  disabled>
 ✅ Tambah ke Semakan
+</button>
+<button
+ type="button"
+ class="secondary-button"
+ id="lockTargetsButton">
+🔒 Kunci Semua Sasaran
+</button>
+<button
+ type="button"
+ class="secondary-button"
+ id="recalibrateButton">
+🔄 Muat Semula Skala
 </button>
 <button
  type="button"
@@ -483,8 +459,10 @@ Belum tersedia
 </button>
 </div>
 <p class="check-hint">
-Boleh tambah beberapa bahagian pola sebelum disimpan — pilih bahagian lain,
-ukur, kemudian tekan tambah. Tekan 💾 untuk merekodkan semua baris dalam Passport.
+🔒 Kunci Semua Sasaran memasukkan semua sasaran formula bahagian pola ke jadual
+dahulu — ukur pola kemudian tekan ✅ dan baris yang sepadan akan diisi sendiri.
+Boleh juga tambah beberapa bahagian pola sebelum disimpan. Tekan 💾 untuk merekodkan
+semua baris yang telah diukur dalam Passport.
 </p>
 <!-- JADUAL SEMAKAN -->
 <div class="table-wrap">
@@ -496,11 +474,12 @@ ukur, kemudian tekan tambah. Tekan 💾 untuk merekodkan semua baris dalam Passp
 <th>Ukuran Pola</th>
 <th>Beza</th>
 <th>Keputusan</th>
+<th>Tindakan</th>
 </tr>
 </thead>
 <tbody id="checkTableBody">
 <tr class="empty-row">
-<td colspan="5">
+<td colspan="6">
 Belum ada data semakan.
 </td>
 </tr>
@@ -589,12 +568,14 @@ SMART-POLA © 2026 · <a href="checklist.html">Senarai Semak Deployment</a>
 <!-- ================================
 JAVASCRIPT
 ================================ -->
-<script src="app.js?v=4.2.0"></script>
+<script src="app.js?v=5.1.0"></script>
 <script>
 // Service Worker + pemasangan PWA
 if ("serviceWorker" in navigator) {
 window.addEventListener("load", () => {
 navigator.serviceWorker.register("sw.js").then((reg) => {
+// Semak kemas kini setiap kali halaman dibuka
+reg.update().catch(() => {});
 // Jika service worker baharu mengambil alih, muat semula supaya
 // semua fail (HTML + JS + CSS) sentiasa sepadan dari segi versi
 reg.addEventListener("updatefound", () => {
@@ -607,6 +588,13 @@ location.reload();
 });
 });
 }).catch(console.error);
+// Jika SW baharu aktif selepas reload tertunda, muat semula serta-merta
+let refreshing = false;
+navigator.serviceWorker.addEventListener("controllerchange", () => {
+if (refreshing) return;
+refreshing = true;
+location.reload();
+});
 });
 }
 let deferredPrompt = null;

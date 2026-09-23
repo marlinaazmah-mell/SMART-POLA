@@ -1,1503 +1,877 @@
 // =========================================================
-// SMART-POLA V4.2.0
-// Pengesanan garisan pola SEBENAR (Sobel + komponen bersambung),
-// multi-keping + nama keping + label dimensi, penentukuran kad
-// hitam, ukur manual 2 titik & automatik, semakan multi-baris,
-// Passport. Overlay analisis dipaparkan di ATAS GAMBAR CAPTURED.
+// SMART-POLA — app.js
+// Sistem Semakan Pola Pakaian Berasaskan AI (TVET)
+//
+// Struktur:
+//   1. Data Ukuran Badan   — input ukuran pelajar (dikekalkan)
+//   2. Tetapan Pola        — formula dijana selepas Bahagian
+//                            Pola dipilih
+//   3. Imbas Pola          — kamera + kad penentukuran 10 cm × 10 cm
+//                            (skala automatik, tanpa paparan kalibrasi)
+//   4. Analisis Pola       — ukur manual/automatik + semakan
+//   5. Keputusan           — LULUS / PERLU PEMBETULAN
+//   6. Passport            — rekod pencapaian
 // =========================================================
+"use strict";
 
-// =========================================================
-// 1. ELEMENT HTML
-// =========================================================
-const unitSelect = document.getElementById("unit");
-const measurementInputs = {
-  shoulder: document.getElementById("shoulder"),
-  chest: document.getElementById("chest"),
-  waist: document.getElementById("waist"),
-  hip: document.getElementById("hip"),
-  neck: document.getElementById("neck"),
-  backLength: document.getElementById("backLength"),
-  labuhSkirt: document.getElementById("labuhSkirt"), 
-  sleeveLength: document.getElementById("sleeveLength"),
-  bukaanTangan: document.getElementById("bukaanTangan")
-};
-const saveMeasurementsBtn = document.getElementById("saveMeasurements");
-const measurementStatus = document.getElementById("measurementStatus");
+document.addEventListener("DOMContentLoaded", () => {
+  const VERSION = "v5.1.0";
+  const $ = (id) => document.getElementById(id);
+  const num = (v) => (Number.isFinite(v) ? v : null);
 
-const garmentType = document.getElementById("garmentType");
-const patternPart = document.getElementById("patternPart");
-const targetInfo = document.getElementById("targetInfo");
-const patternSelectionStatus = document.getElementById("patternSelectionStatus");
-const targetInputGroup = document.getElementById("targetInputGroup");
-const targetInput = document.getElementById("targetInput");
-const saveTargetButton = document.getElementById("saveTargetButton");
-const targetStatus = document.getElementById("targetStatus");
-
-const camera = document.getElementById("camera");
-const cameraContainer = document.getElementById("cameraContainer");
-const canvasInput = document.getElementById("canvasInput");
-const overlayCanvas = document.getElementById("overlayCanvas");
-const cameraButton = document.getElementById("cameraButton");
-const flipCameraButton = document.getElementById("flipCamera");
-const capturedImage = document.getElementById("capturedImage");
-const measureCanvas = document.getElementById("measureCanvas");
-const noImageMessage = document.getElementById("noImageMessage");
-const status = document.getElementById("status");
-
-const calibrationWidthInput = document.getElementById("calibrationWidth");
-const calibrateButton = document.getElementById("calibrateButton");
-const calibrationStatus = document.getElementById("calibrationStatus");
-
-const lineStatus = document.getElementById("lineStatus");
-const patternMeasurement = document.getElementById("patternMeasurement");
-const formulaStatus = document.getElementById("formulaStatus");
-const formulaDetail = document.getElementById("formulaDetail");
-
-const chipLength = document.getElementById("chipLength");
-const chipWidth = document.getElementById("chipWidth");
-const chipHeight = document.getElementById("chipHeight");
-const autoChips = document.getElementById("autoChips");
-const pieceChips = document.getElementById("pieceChips");
-const pieceRename = document.getElementById("pieceRename");
-const pieceNameInput = document.getElementById("pieceNameInput");
-const renamePieceButton = document.getElementById("renamePieceButton");
-const edgeSensitivity = document.getElementById("edgeSensitivity");
-const sensitivityValue = document.getElementById("sensitivityValue");
-
-const manualCheckButton = document.getElementById("manualCheckButton");
-const autoMeasureButton = document.getElementById("autoMeasureButton");
-const saveChecksButton = document.getElementById("saveChecksButton");
-const checkTableBody = document.getElementById("checkTableBody");
-
-const resultTitle = document.getElementById("resultTitle");
-const resultMessage = document.getElementById("resultMessage");
-
-const passportList = document.getElementById("passportList");
-const passportTotal = document.getElementById("passportTotal");
-const passportLulus = document.getElementById("passportLulus");
-const clearPassportButton = document.getElementById("clearPassportButton");
-
-// =========================================================
-// 2. VARIABLES
-// =========================================================
-let cameraStream = null;
-let cameraActive = false;       // true semasa kamera hidup
-let facingMode = "environment"; // "environment" = belakang, "user" = depan
-let measurements = null;        // cm
-let calibration = null;         // { cmPerPixel }
-let captured = false;
-let manualPoints = [];          // [{x, y}, {x, y}]
-let lastChecks = [];            // baris semakan semasa
-let autoMeasure = null;         // { cm, lengthPx, ok, source }
-let visionResult = null;        // { edges, w, h, pieces, scaleBack }
-let selectedPiece = 0;
-let sensitivity = 5;            // 1-10
-let sensitivityTimer = null;
-let pieceNames = {};            // { "0": "Depan", ... } ikut indeks keping
-const PIECE_COLORS = ["#22d3ee", "#f59e0b", "#a78bfa", "#34d399", "#f472b6", "#facc15"];
-
-const PATTERN_PARTS = {
-  baju: [
-    { value: "badan-hadapan", label: "Badan Hadapan" },
-    { value: "badan-belakang", label: "Badan Belakang" },
-    { value: "lengan", label: "Lengan" },
-    { value: "kolar", label: "Kolar" },
-    { value: "manset", label: "Manset" }
-  ],
-  skirt: [
-    { value: "skirt-hadapan", label: "Skirt Hadapan" },
-    { value: "skirt-belakang", label: "Skirt Belakang" },
-    { value: "ben-pinggang", label: "Ben Pinggang" }
-  ],
-  seluar: [
-    { value: "seluar-hadapan", label: "Seluar Hadapan" },
-    { value: "seluar-belakang", label: "Seluar Belakang" },
-    { value: "ben-pinggang", label: "Ben Pinggang" }
-  ],
-  dress: [
-    { value: "badan-hadapan", label: "Badan Hadapan" },
-    { value: "badan-belakang", label: "Badan Belakang" }
-  ]
-};
-
-const TOLERANCE = 0.5; // cm
-
-const STORAGE_KEYS = {
-  measurements: "smartpola_measurements",
-  calibration: "smartpola_calibration",
-  passport: "smartpola_passport",
-  sensitivity: "smartpola_sensitivity",
-  pieceNames: "smartpola_piece_names",
-  manualTargets: "smartpola_manual_targets"
-};
-
-// =========================================================
-// 3. STATUS & UNIT
-// =========================================================
-function updateStatus(message) {
-  if (status) {
-    status.textContent = message;
+  // =======================================================
+  // UTILITI
+  // =======================================================
+  function fmt(v, d = 1) {
+    if (v === null || v === undefined || !Number.isFinite(v)) return "—";
+    return Number(v).toFixed(d) + " cm";
   }
-}
 
-const unitLabels = document.querySelectorAll(".unit-label");
-function updateUnitLabels() {
-  const label = unitSelect.value === "in" ? "in" : "cm";
-  unitLabels.forEach((span) => {
-    span.textContent = label;
+  function setStatus(el, msg, cls) {
+    if (!el) return;
+    el.textContent = msg;
+    el.className = "status" + (cls ? " " + cls : "");
+  }
+
+  // =======================================================
+  // VERSI
+  // =======================================================
+  const versionBadge = $("versionBadge");
+  if (versionBadge) versionBadge.textContent = VERSION;
+
+  // =======================================================
+  // SEKSYEN 1 — DATA UKURAN BADAN (dikekalkan)
+  // =======================================================
+  const unitSelect = $("unit");
+  const unitLabels = document.querySelectorAll(".input-unit .unit-label");
+  const measurementIds = [
+    "shoulder", "chest", "waist", "hip", "neck",
+    "backLength", "labuhBaju", "labuhSkirt", "labuhLengan", "bukaanTangan",
+  ];
+  const measurementInputs = {};
+  measurementIds.forEach((id) => {
+    const el = $(id);
+    if (el) measurementInputs[id] = el;
   });
-  const calibLabel = document.getElementById("calibrationUnitLabel");
-  if (calibLabel) {
-    calibLabel.textContent = label;
-  }
-}
 
-function getDisplayUnit() {
-  return unitSelect.value === "in" ? "in" : "cm";
-}
-function cmToDisplay(cm) {
-  return getDisplayUnit() === "in" ? cm / 2.54 : cm;
-}
-function fmtCm(cm) {
-  const unit = getDisplayUnit();
-  const decimals = unit === "in" ? 2 : 1;
-  return `${cmToDisplay(cm).toFixed(decimals)} ${unit}`;
-}
-function fmtDiff(diff) {
-  const unit = getDisplayUnit();
-  const decimals = unit === "in" ? 2 : 1;
-  return `${diff >= 0 ? "+" : ""}${cmToDisplay(diff).toFixed(decimals)} ${unit}`;
-}
-
-function convertInputValues(fromUnit, toUnit) {
-  if (fromUnit === toUnit) return;
-  const toCm = fromUnit === "in" ? 2.54 : 1;
-  const fromCm = toUnit === "in" ? 1 / 2.54 : 1;
-  for (const key of Object.keys(measurementInputs)) {
-    const input = measurementInputs[key];
-    const raw = input.value.trim();
-    if (raw === "") continue;
-    const num = parseFloat(raw);
-    if (isNaN(num) || num < 0) continue;
-    input.value = Math.round(num * toCm * fromCm * 100) / 100;
+  function currentUnit() {
+    return unitSelect ? unitSelect.value : "cm";
   }
-  const calibRaw = calibrationWidthInput.value.trim();
-  if (calibRaw !== "") {
-    const calibNum = parseFloat(calibRaw);
-    if (!isNaN(calibNum) && calibNum >= 0) {
-      calibrationWidthInput.value = Math.round(calibNum * toCm * fromCm * 100) / 100;
+
+  function readMeasurements() {
+    // Nilai disimpan sentiasa dalam cm; input dalam inci ditukar automatik.
+    const factor = currentUnit() === "in" ? 2.54 : 1;
+    const m = {};
+    for (const [id, el] of Object.entries(measurementInputs)) {
+      const raw = parseFloat(el.value);
+      m[id] = Number.isFinite(raw) && raw > 0 ? num(raw * factor) : null;
     }
-  }
-}
-
-// =========================================================
-// 4. DATA UKURAN BADAN
-// =========================================================
-function readMeasurementInputs() {
-  const unit = unitSelect.value;
-  const factor = unit === "in" ? 2.54 : 1;
-  const values = {};
-  let valid = true;
-
-  for (const key of Object.keys(measurementInputs)) {
-    const input = measurementInputs[key];
-    const raw = input.value.trim();
-    if (raw === "") {
-      values[key] = null;
-      continue;
-    }
-    const num = parseFloat(raw);
-    if (isNaN(num) || num < 0) {
-      valid = false;
-      break;
-    }
-    values[key] = num * factor;
+    return m;
   }
 
-  if (!valid) {
-    return null;
-  }
-  return values;
-}
-
-function saveMeasurementsFunction() {
-  const values = readMeasurementInputs();
-  if (!values) {
-    measurementStatus.textContent = "⚠️ Sila masukkan ukuran nombor yang sah.";
-    return;
-  }
-  if (Object.values(values).every(v => v === null)) {
-    measurementStatus.textContent = "⚠️ Sila isikan sekurang-kurangnya satu ukuran badan.";
-    return;
-  }
-
-  measurements = values;
-  try {
-    localStorage.setItem(STORAGE_KEYS.measurements, JSON.stringify(measurements));
-  } catch (e) { /* teruskan */ }
-
-  const filled = Object.values(values).filter(v => v !== null).length;
-  measurementStatus.textContent = `🟢 ${filled} ukuran disimpan. Pilih bahagian pola untuk melihat sasaran.`;
-  refreshTargetInfo();
-}
-
-function loadSavedMeasurements() {
-  try {
-    const saved = localStorage.getItem(STORAGE_KEYS.measurements);
-    if (!saved) return;
-    const data = JSON.parse(saved);
-    if (!data || typeof data !== "object") return;
-    measurements = data;
-    reflectMeasurementsToInputs();
-    measurementStatus.textContent = "🟢 Ukuran tersimpan dimuatkan daripada sesi sebelumnya.";
-    refreshTargetInfo();
-  } catch (e) { /* abaikan */ }
-}
-
-function reflectMeasurementsToInputs() {
-  if (!measurements) return;
-  const unit = unitSelect.value;
-  const factor = unit === "in" ? 1 / 2.54 : 1;
-  for (const key of Object.keys(measurementInputs)) {
-    const cm = measurements[key];
-    if (cm !== null && cm !== undefined) {
-      measurementInputs[key].value = Math.round(cm * factor * 10) / 10;
-    }
-  }
-}
-
-// =========================================================
-// 5. TETAPAN POLA / SASARAN
-// =========================================================
-function populatePatternParts() {
-  const type = garmentType.value;
-  patternPart.innerHTML = "";
-  if (!type) {
-    patternPart.disabled = true;
-    const option = document.createElement("option");
-    option.value = "";
-    option.textContent = "-- Pilih jenis pakaian dahulu --";
-    patternPart.appendChild(option);
-    return;
-  }
-  patternPart.disabled = false;
-  const placeholder = document.createElement("option");
-  placeholder.value = "";
-  placeholder.textContent = "-- Pilih bahagian pola --";
-  patternPart.appendChild(placeholder);
-  for (const part of PATTERN_PARTS[type]) {
-    const option = document.createElement("option");
-    option.value = part.value;
-    option.textContent = part.label;
-    patternPart.appendChild(option);
-  }
-  refreshTargetInfo();
-}
-
-// =========================================================
-// SASARAN MANUAL
-// =========================================================
-let manualTargets = {}; // { "baju/badan-hadapan": cm, ... }
-let currentTargetKey = null; // "baju/badan-hadapan"
-
-function getTargetKey(type, part) {
-  return `${type}/${part}`;
-}
-
-function loadManualTargets() {
-  try {
-    const saved = JSON.parse(localStorage.getItem(STORAGE_KEYS.manualTargets) || "{}");
-    if (saved && typeof saved === "object") {
-      manualTargets = saved;
-    }
-  } catch (e) { /* abaikan */ }
-}
-
-function saveManualTargets() {
-  try {
-    localStorage.setItem(STORAGE_KEYS.manualTargets, JSON.stringify(manualTargets));
-  } catch (e) { /* abaikan */ }
-}
-
-function refreshTargetInfo() {
-  const type = garmentType.value;
-  const part = patternPart.value;
-
-  // Sorok/munculkan medan input sasaran manual
-  if (targetInputGroup) {
-    targetInputGroup.style.display = (type && part) ? "block" : "none";
-  }
-
-  if (!type || !part) {
-    targetInfo.textContent =
-      "Sasaran ukuran akan dipaparkan di sini selepas bahagian pola dipilih dan sasaran dimasukkan.";
-    updateFormulaDetail(null);
-    if (targetInput) targetInput.value = "";
-    updateCheckButtons();
-    return;
-  }
-
-  currentTargetKey = getTargetKey(type, part);
-  const partLabel = getPartLabel(type, part);
-  const saved = manualTargets[currentTargetKey];
-
-  if (saved === undefined || saved === null || isNaN(saved)) {
-    targetInfo.textContent = `⚠️ Sasaran bagi ${partLabel} belum dimasukkan. Sila isikan di bawah.`;
-    updateFormulaDetail(null);
-    if (targetInput) targetInput.value = "";
-    updateCheckButtons();
-    return;
-  }
-
-  targetInfo.innerHTML =
-    `🎯 <strong>Sasaran ${partLabel}:</strong> ${fmtCm(saved)} (toleransi ±${fmtCm(TOLERANCE)})`;
-  if (targetInput) targetInput.value = String(Math.round(cmToDisplay(saved) * 100) / 100);
-  updateFormulaDetail(
-    `${partLabel} = sasaran manual = ${fmtCm(saved)} (toleransi ±${fmtCm(TOLERANCE)})`
-  );
-  updateCheckButtons();
-}
-
-function saveTargetFunction() {
-  const type = garmentType.value;
-  const part = patternPart.value;
-  if (!type || !part) {
-    if (targetStatus) targetStatus.textContent = "⚠️ Pilih jenis pakaian dan bahagian pola dahulu.";
-    return;
-  }
-  const raw = targetInput ? targetInput.value.trim() : "";
-  const num = parseFloat(raw);
-  if (raw === "" || isNaN(num) || num < 0) {
-    if (targetStatus) targetStatus.textContent = "⚠️ Sila masukkan sasaran nombor yang sah.";
-    return;
-  }
-  // Simpan secara dalaman dalam cm (konsisten dengan ukuran badan)
-  const cm = getDisplayUnit() === "in" ? num * 2.54 : num;
-  const key = getTargetKey(type, part);
-  manualTargets[key] = cm;
-  saveManualTargets();
-
-  const partLabel = getPartLabel(type, part);
-  if (targetStatus) {
-    targetStatus.textContent = `🟢 Sasaran ${partLabel} = ${fmtCm(cm)} disimpan.`;
-  }
-  refreshTargetInfo();
-}
-
-function getPartLabel(type, part) {
-  const found = (PATTERN_PARTS[type] || []).find(p => p.value === part);
-  return found ? found.label : part;
-}
-
-function updateFormulaDetail(text) {
-  formulaDetail.textContent = text ? text : "Belum tersedia";
-}
-
-// =========================================================
-// 6-8. KAMERA 1 BUTANG: buka -> ambil (kamera berhenti automatik)
-// =========================================================
-async function startCameraFunction() {
-  try {
-    if (cameraButton) cameraButton.disabled = true;
-    // Papar semula kotak kamera & kosongkan overlay lama (elak hijau melekat)
-    if (cameraContainer) cameraContainer.style.display = "block";
-    clearOverlays();
-
-    cameraStream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: { ideal: facingMode } },
-      audio: false
+  function updateUnitLabels() {
+    const label = currentUnit() === "in" ? "in" : "cm";
+    unitLabels.forEach((el) => {
+      el.textContent = label;
     });
-    camera.srcObject = cameraStream;
-    await camera.play();
-    cameraActive = true;
-    if (cameraButton) cameraButton.disabled = false;
-    if (cameraButton) cameraButton.textContent = "📸 Ambil Gambar";
-    if (flipCameraButton) flipCameraButton.hidden = false;
-    updateStatus("Kamera aktif. Letakkan pola dan kad penentukuran dalam pandangan, kemudian tekan 📸 Ambil Gambar.");
-  } catch (error) {
-    console.error(error);
-    cameraActive = false;
-    if (cameraButton) cameraButton.disabled = false;
-    if (cameraButton) cameraButton.textContent = "📷 Buka Kamera";
-    if (flipCameraButton) flipCameraButton.hidden = true;
-    updateStatus("Kamera tidak dapat diaktifkan. Sila semak kebenaran kamera. Gunakan https:// atau localhost.");
-  }
-}
-
-function stopCameraFunction() {
-  if (cameraStream) {
-    cameraStream.getTracks().forEach(track => track.stop());
-    cameraStream = null;
-  }
-  camera.srcObject = null;
-  cameraActive = false;
-  if (cameraButton) cameraButton.textContent = "📷 Buka Kamera";
-  if (flipCameraButton) flipCameraButton.hidden = true;
-}
-
-function captureImageFunction() {
-  if (!cameraStream || camera.videoWidth === 0) {
-    updateStatus("Kamera belum sedia. Cuba lagi sebentar.");
-    return;
   }
 
-  canvasInput.width = camera.videoWidth;
-  canvasInput.height = camera.videoHeight;
-  const context = canvasInput.getContext("2d");
-  context.drawImage(camera, 0, 0, canvasInput.width, canvasInput.height);
-
-  const imageData = canvasInput.toDataURL("image/png");
-  showCapturedImage(imageData);
-  stopCameraFunction();
-  updateStatus("Gambar pola berjaya diambil. Kamera dihentikan.");
-  analyzePattern();
-}
-
-async function flipCameraFunction() {
-  if (!cameraActive) return;
-  facingMode = facingMode === "environment" ? "user" : "environment";
-  if (cameraStream) {
-    cameraStream.getTracks().forEach(track => track.stop());
-    cameraStream = null;
-  }
-  camera.srcObject = null;
-  cameraActive = false;
-  if (flipCameraButton) flipCameraButton.hidden = true;
-  await startCameraFunction();
-  updateStatus(facingMode === "user" ? "Kamera depan diaktifkan." : "Kamera belakang diaktifkan.");
-}
-
-async function onCameraButtonClick() {
-  if (!cameraActive) {
-    await startCameraFunction();
-  } else {
-    captureImageFunction();
-  }
-}
-
-function clearOverlays() {
-  overlayCanvas.width = 0;
-  overlayCanvas.height = 0;
-  measureCanvas.width = 0;
-  measureCanvas.height = 0;
-}
-
-function showCapturedImage(dataUrl) {
-  capturedImage.src = dataUrl;
-  capturedImage.style.display = "block";
-  noImageMessage.style.display = "none";
-  captured = true;
-  manualPoints = [];
-  visionResult = null;
-  lastChecks = [];
-  // Nama keping adalah khusus bagi setiap gambar
-  pieceNames = {};
-  try {
-    localStorage.removeItem(STORAGE_KEYS.pieceNames);
-  } catch (e) { /* abaikan */ }
-  selectedPiece = 0;
-  renderCheckTable();
-  // Sembunyikan kotak kamera: analisis dipaparkan pada gambar di bawah
-  if (cameraContainer) cameraContainer.style.display = "none";
-  clearOverlays();
-  lineStatus.textContent = "Belum dianalisis";
-  patternMeasurement.textContent = "Menunggu imbasan";
-  if (autoChips) autoChips.style.display = "none";
-  if (pieceChips) pieceChips.style.display = "none";
-  if (pieceRename) pieceRename.style.display = "none";
-  calibrateButton.disabled = false;
-  updateCheckButtons();
-}
-
-// =========================================================
-// 9. VISI: PENGESANAN GARISAN POLA SEBENAR
-// =========================================================
-function runVision() {
-  const width = canvasInput.width;
-  const height = canvasInput.height;
-  if (!width || !height) return null;
-
-  const maxSide = 1400;
-  const scale = Math.min(1, maxSide / Math.max(width, height));
-  const w = Math.max(1, Math.round(width * scale));
-  const h = Math.max(1, Math.round(height * scale));
-
-  let srcData;
-  if (scale === 1) {
-    srcData = canvasInput.getContext("2d").getImageData(0, 0, w, h);
-  } else {
-    const tmp = document.createElement("canvas");
-    tmp.width = w;
-    tmp.height = h;
-    const tctx = tmp.getContext("2d");
-    tctx.drawImage(canvasInput, 0, 0, w, h);
-    srcData = tctx.getImageData(0, 0, w, h);
-  }
-
-  // Kawasan kad penentukuran dikeluarkan
-  const cardFull = detectBlackCard();
-  let cardBox = null;
-  if (cardFull) {
-    cardBox = {
-      minX: Math.max(0, Math.floor(cardFull.x0 * scale) - 10),
-      maxX: Math.min(w - 1, Math.ceil(cardFull.x1 * scale) + 10),
-      minY: Math.max(0, Math.floor(cardFull.top * scale) - 10),
-      maxY: Math.min(h - 1, Math.ceil(cardFull.bottom * scale) + 10)
-    };
-  }
-
-  const gray = new Float32Array(w * h);
-  {
-    const src = srcData.data;
-    for (let i = 0, p = 0; i < src.length; i += 4, p++) {
-      gray[p] = 0.299 * src[i] + 0.587 * src[i + 1] + 0.114 * src[i + 2];
+  function saveMeasurements() {
+    const m = readMeasurements();
+    const filled = Object.values(m).filter((v) => v !== null).length;
+    if (filled === 0) {
+      setStatus($("measurementStatus"), "Sila masukkan sekurang-kurangnya satu ukuran.", "fail");
+      return;
     }
-  }
-  // Blur dua laluan [1 2 1]
-  const tmpF = new Float32Array(w * h);
-  for (let y = 0; y < h; y++) {
-    const row = y * w;
-    for (let x = 0; x < w; x++) {
-      const a = gray[row + (x > 0 ? x - 1 : 0)];
-      const b = gray[row + x];
-      const c = gray[row + (x < w - 1 ? x + 1 : w - 1)];
-      tmpF[row + x] = (a + 2 * b + c) / 4;
-    }
-  }
-  for (let x = 0; x < w; x++) {
-    for (let y = 0; y < h; y++) {
-      const a = tmpF[(y > 0 ? y - 1 : 0) * w + x];
-      const b = tmpF[y * w + x];
-      const c = tmpF[(y < h - 1 ? y + 1 : h - 1) * w + x];
-      gray[y * w + x] = (a + 2 * b + c) / 4;
-    }
-  }
-
-  // Sobel + ambang adaptif (dikawal slider kepekaan)
-  const mag = new Float32Array(w * h);
-  let maxMag = 0;
-  for (let y = 1; y < h - 1; y++) {
-    for (let x = 1; x < w - 1; x++) {
-      const i = y * w + x;
-      const tl = gray[i - w - 1], t = gray[i - w], tr = gray[i - w + 1];
-      const l = gray[i - 1], r = gray[i + 1];
-      const bl = gray[i + w - 1], b = gray[i + w], br = gray[i + w + 1];
-      const gx = (tr + 2 * r + br) - (tl + 2 * l + bl);
-      const gy = (bl + 2 * b + br) - (tl + 2 * t + tr);
-      const m = gx * gx + gy * gy;
-      mag[i] = m;
-      if (m > maxMag) maxMag = m;
-    }
-  }
-  let edges = new Uint8Array(w * h);
-  if (maxMag > 0) {
-    const bins = 256;
-    const hist = new Uint32Array(bins);
-    const s = (bins - 1) / maxMag;
-    for (let i = 0; i < mag.length; i++) hist[(mag[i] * s) | 0]++;
-    // 1 = ketat (~4% tepi), 10 = longgar (~22% tepi)
-    const frac = 0.04 + (sensitivity - 1) * (0.18 / 9);
-    const target = Math.floor(w * h * frac);
-    let acc = 0, bin = bins - 1;
-    for (let b = 0; b < bins; b++) {
-      acc += hist[b];
-      if (acc >= target) { bin = b; break; }
-    }
-    const thr = bin / s;
-    for (let i = 0; i < mag.length; i++) {
-      if (mag[i] >= thr) edges[i] = 1;
-    }
-    if (cardBox) {
-      for (let y = cardBox.minY; y <= cardBox.maxY; y++) {
-        for (let x = cardBox.minX; x <= cardBox.maxX; x++) {
-          edges[y * w + x] = 0;
-        }
-      }
-    }
-    edges = morphClose(edges, w, h);
-  }
-
-  const { components } = connectedComponents(edges, w, h);
-  if (!components.length) {
-    return { edges, w, h, pieces: [], scaleBack: 1 / scale };
-  }
-
-  components.sort((a, b) => b.size - a.size);
-  const minSize = Math.max(150, components[0].size * 0.12);
-  const kept = components.filter(c => c.size >= minSize).slice(0, 6);
-
-  const pieces = kept.map((comp) => {
-    const box = { minX: comp.minX, maxX: comp.maxX, minY: comp.minY, maxY: comp.maxY };
-    return {
-      bbox: box,
-      longest: longestExtentInBox(edges, w, h, box),
-      widthPx: box.maxX - box.minX + 1,
-      heightPx: box.maxY - box.minY + 1,
-      edgeCount: comp.size
-    };
-  });
-
-  return { edges, w, h, pieces, scaleBack: 1 / scale };
-}
-
-function longestExtentInBox(edges, w, h, box) {
-  const pad = 2;
-  const x0 = Math.max(0, box.minX - pad), x1 = Math.min(w - 1, box.maxX + pad);
-  const y0 = Math.max(0, box.minY - pad), y1 = Math.min(h - 1, box.maxY + pad);
-  let longest = 0;
-  for (let a = 0; a < 12; a++) {
-    const rad = (a * Math.PI) / 12;
-    const dx = Math.cos(rad), dy = Math.sin(rad);
-    for (let oy = y0; oy <= y1; oy += 2) {
-      for (let ox = x0; ox <= x1; ox += 2) {
-        const px = ox - dx, py = oy - dy;
-        if (px >= x0 && px <= x1 && py >= y0 && py <= y1) continue;
-        let run = 0;
-        let cx = ox, cy = oy;
-        while (cx >= x0 && cx <= x1 && cy >= y0 && cy <= y1) {
-          if (edges[(cy | 0) * w + (cx | 0)]) {
-            run++;
-            if (run > longest) longest = run;
-          } else {
-            run = 0;
-          }
-          cx += dx;
-          cy += dy;
-        }
-      }
-    }
-  }
-  return longest;
-}
-
-function morphClose(edges, w, h) {
-  const dil = new Uint8Array(w * h);
-  for (let y = 0; y < h; y++) {
-    for (let x = 0; x < w; x++) {
-      const i = y * w + x;
-      if (edges[i]) {
-        dil[i] = 1;
-        continue;
-      }
-      if (
-        (x > 0 && edges[i - 1]) || (x < w - 1 && edges[i + 1]) ||
-        (y > 0 && edges[i - w]) || (y < h - 1 && edges[i + w]) ||
-        (x > 0 && y > 0 && edges[i - w - 1]) ||
-        (x < w - 1 && y > 0 && edges[i - w + 1]) ||
-        (x > 0 && y < h - 1 && edges[i + w - 1]) ||
-        (x < w - 1 && y < h - 1 && edges[i + w + 1])
-      ) {
-        dil[i] = 1;
-      }
-    }
-  }
-  const out = new Uint8Array(w * h);
-  for (let y = 0; y < h; y++) {
-    for (let x = 0; x < w; x++) {
-      const i = y * w + x;
-      if (!dil[i]) continue;
-      let all = true;
-      for (let dy = -1; dy <= 1 && all; dy++) {
-        for (let dx = -1; dx <= 1; dx++) {
-          const nx = x + dx;
-          const ny = y + dy;
-          if (nx < 0 || ny < 0 || nx >= w || ny >= h || !dil[ny * w + nx]) {
-            all = false;
-            break;
-          }
-        }
-      }
-      if (all) out[i] = 1;
-    }
-  }
-  return out;
-}
-
-function connectedComponents(edges, w, h) {
-  const labels = new Int32Array(w * h).fill(-1);
-  const components = [];
-  const queue = new Int32Array(w * h);
-  for (let start = 0; start < w * h; start++) {
-    if (!edges[start] || labels[start] !== -1) continue;
-    const id = components.length;
-    let head = 0, tail = 0;
-    queue[tail++] = start;
-    labels[start] = id;
-    let size = 0;
-    let minX = w, maxX = 0, minY = h, maxY = 0;
-    while (head < tail) {
-      const idx = queue[head++];
-      const x = idx % w;
-      const y = (idx / w) | 0;
-      size++;
-      if (x < minX) minX = x;
-      if (x > maxX) maxX = x;
-      if (y < minY) minY = y;
-      if (y > maxY) maxY = y;
-      for (let dy = -1; dy <= 1; dy++) {
-        for (let dx = -1; dx <= 1; dx++) {
-          const nx = x + dx;
-          const ny = y + dy;
-          if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue;
-          const n = ny * w + nx;
-          if (edges[n] && labels[n] === -1) {
-            labels[n] = id;
-            queue[tail++] = n;
-          }
-        }
-      }
-    }
-    components.push({ size, minX, maxX, minY, maxY });
-  }
-  return { labels, components };
-}
-
-function analyzePattern() {
-  if (!captured) {
-    lineStatus.textContent = "Tiada gambar";
-    patternMeasurement.textContent = "Tiada data";
-    return;
-  }
-  updateStatus("Menganalisis garisan pola (Sobel)...");
-  setTimeout(() => {
     try {
-      visionResult = runVision();
-      selectedPiece = 0;
-      autoMeasure = null;
-      renderMeasureCanvas();
-      renderPieceChips();
-      if (visionResult && visionResult.pieces.length) {
-        lineStatus.textContent = visionResult.pieces.length > 1
-          ? `${visionResult.pieces.length} keping pola dikesan`
-          : "Garisan dikesan";
-        updateStatus(
-          "Analisis selesai. Hasil dikesan dipaparkan pada gambar pola di bawah. " +
-          "Tentukan skala, kemudian pilih ukuran atau klik dua titik pada gambar."
-        );
-      } else {
-        lineStatus.textContent = "Garisan tidak jelas";
-        updateStatus(
-          "Garisan pola tidak dapat dikesan. Laraskan slider kepekaan, atau cuba cahaya cukup, garisan lebih tebal, dan pola mengisi bingkai."
-        );
-      }
-    } catch (error) {
-      console.error(error);
-      updateStatus("Analisis pola tidak dapat dilakukan.");
-    }
-  }, 60);
-}
-
-// =========================================================
-// 9b. PAPARAN ANALISIS PADA GAMBAR CAPTURED (measureCanvas)
-// =========================================================
-function renderMeasureCanvas() {
-  const w = canvasInput.width || capturedImage.naturalWidth;
-  const h = canvasInput.height || capturedImage.naturalHeight;
-  if (!w || !h) return;
-  measureCanvas.width = w;
-  measureCanvas.height = h;
-  const ctx = measureCanvas.getContext("2d");
-  ctx.clearRect(0, 0, w, h);
-
-  drawVisionLayer(ctx, w, h);
-  drawPointsLayer(ctx);
-  updateChipsFromVision();
-}
-
-function drawVisionLayer(ctx, w, h) {
-  if (!visionResult || !visionResult.pieces || !visionResult.pieces.length) return;
-  const s = visionResult.scaleBack || 1;
-
-  // 1. Titik tepi hijau
-  ctx.fillStyle = "rgba(0,255,120,0.5)";
-  const step = Math.max(1, Math.floor(visionResult.w / 420));
-  for (let y = 0; y < visionResult.h; y += step) {
-    for (let x = 0; x < visionResult.w; x += step) {
-      if (visionResult.edges[y * visionResult.w + x]) {
-        ctx.fillRect(x * s, y * s, 3, 3);
-      }
+      localStorage.setItem("smartpola_measurements", JSON.stringify({ unit: currentUnit(), values: m }));
+      setStatus($("measurementStatus"), `✅ ${filled} ukuran disimpan. Seterusnya: pilih pola di Seksyen 2.`, "ok");
+    } catch (e) {
+      setStatus($("measurementStatus"), "Penyimpanan disekat pelayar (mode incognito?).", "fail");
     }
   }
 
-  // 2. Kotak keping + nama + label dimensi
-  ctx.font = "bold 16px Arial";
-  const cmpp = calibration ? calibration.cmPerPixel : null;
-  visionResult.pieces.forEach((piece, idx) => {
-    const color = PIECE_COLORS[idx % PIECE_COLORS.length];
-    const b = piece.bbox;
-    const name = getPieceDisplayName(idx);
-    const bx = b.minX * s;
-    const by = b.minY * s;
-    const bw = (b.maxX - b.minX) * s;
-    const bh = (b.maxY - b.minY) * s;
-
-    ctx.strokeStyle = color;
-    ctx.lineWidth = idx === selectedPiece ? 4 : 2;
-    ctx.setLineDash(idx === selectedPiece ? [] : [8, 6]);
-    ctx.strokeRect(bx, by, bw, bh);
-    ctx.setLineDash([]);
-
-    // Label nama (latar gelap supaya sentiasa terbaca)
-    const labelWidth = ctx.measureText(name).width + 12;
-    const labelY = Math.max(20, by - 8);
-    ctx.fillStyle = "rgba(17,24,39,0.75)";
-    ctx.fillRect(bx, labelY - 18, labelWidth, 22);
-    ctx.fillStyle = color;
-    ctx.fillText(name, bx + 6, labelY - 2);
-
-    // Anak panah dimensi untuk keping dipilih (dalam unit paparan)
-    if (idx === selectedPiece) {
-      ctx.strokeStyle = "rgba(255,255,255,0.95)";
-      ctx.fillStyle = "rgba(255,255,255,0.95)";
-      ctx.lineWidth = 2;
-
-      const yW = by + bh + 22;
-      drawArrow(ctx, bx, yW, bx + bw, yW);
-      const xH = bx + bw + 22;
-      drawArrow(ctx, xH, by, xH, by + bh);
-
-      if (cmpp) {
-        ctx.font = "bold 14px Arial";
-        const wCm = fmtCm(piece.widthPx * s * cmpp);
-        const wLabel = `W = ${wCm}`;
-        ctx.fillText(wLabel, bx + bw / 2 - ctx.measureText(wLabel).width / 2, yW + 18);
-
-        const hCm = fmtCm(piece.heightPx * s * cmpp);
-        const hLabel = `T = ${hCm}`;
-        ctx.save();
-        ctx.translate(xH + 14, by + bh / 2);
-        ctx.rotate(-Math.PI / 2);
-        ctx.fillText(hLabel, -ctx.measureText(hLabel).width / 2, 0);
-        ctx.restore();
-        ctx.font = "bold 16px Arial";
+  function loadMeasurements() {
+    try {
+      const saved = JSON.parse(localStorage.getItem("smartpola_measurements") || "null");
+      if (!saved || !saved.values) return;
+      // Nilai tersimpan dalam cm — papar dalam unit semasa.
+      const factor = currentUnit() === "in" ? 1 / 2.54 : 1;
+      for (const [id, cm] of Object.entries(saved.values)) {
+        const el = measurementInputs[id];
+        if (el && cm !== null) el.value = (cm * factor).toFixed(1);
       }
+      setStatus($("measurementStatus"), "Ukuran sebelumnya dimuatkan.", "ok");
+    } catch (e) {
+      // abaikan
     }
-  });
-}
-
-function drawArrow(ctx, x0, y0, x1, y1) {
-  const head = 8;
-  const angle = Math.atan2(y1 - y0, x1 - x0);
-  ctx.beginPath();
-  ctx.moveTo(x0, y0);
-  ctx.lineTo(x1, y1);
-  ctx.stroke();
-  ctx.beginPath();
-  ctx.moveTo(x1, y1);
-  ctx.lineTo(x1 - head * Math.cos(angle - Math.PI / 6), y1 - head * Math.sin(angle - Math.PI / 6));
-  ctx.lineTo(x1 - head * Math.cos(angle + Math.PI / 6), y1 - head * Math.sin(angle + Math.PI / 6));
-  ctx.closePath();
-  ctx.fill();
-  ctx.beginPath();
-  ctx.moveTo(x0, y0);
-  ctx.lineTo(x0 + head * Math.cos(angle - Math.PI / 6), y0 + head * Math.sin(angle - Math.PI / 6));
-  ctx.lineTo(x0 + head * Math.cos(angle + Math.PI / 6), y0 + head * Math.sin(angle + Math.PI / 6));
-  ctx.closePath();
-  ctx.fill();
-}
-
-function drawPointsLayer(ctx) {
-  if (!manualPoints.length) return;
-  ctx.lineWidth = 2;
-  ctx.strokeStyle = "rgba(255,255,0,0.9)";
-  ctx.fillStyle = "rgba(255,60,60,0.95)";
-  ctx.font = "16px Arial";
-
-  manualPoints.forEach((p, idx) => {
-    ctx.beginPath();
-    ctx.arc(p.x, p.y, 6, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillText(`${idx + 1}`, p.x + 10, p.y - 10);
-  });
-
-  if (manualPoints.length === 2) {
-    ctx.beginPath();
-    ctx.moveTo(manualPoints[0].x, manualPoints[0].y);
-    ctx.lineTo(manualPoints[1].x, manualPoints[1].y);
-    ctx.stroke();
-  }
-}
-
-function updateChipsFromVision() {
-  if (!visionResult || !visionResult.pieces || !visionResult.pieces.length) {
-    if (autoChips) autoChips.style.display = "none";
-    return;
-  }
-  const piece = visionResult.pieces[selectedPiece] || visionResult.pieces[0];
-  if (autoChips) autoChips.style.display = "flex";
-  if (chipLength) chipLength.textContent = `📐 Lebar: ${piece.widthPx} px`;
-  if (chipWidth) chipWidth.textContent = `📏 Terpanjang: ${piece.longest} px`;
-  if (chipHeight) chipHeight.textContent = `↕️ Tinggi: ${piece.heightPx} px`;
-}
-
-// =========================================================
-// 10. PENENTUKURAN (kad hitam dikesan secara automatik)
-// =========================================================
-function calibrateFunction() {
-  if (!captured) {
-    calibrationStatus.textContent = "⚠️ Ambil gambar pola terlebih dahulu.";
-    return;
-  }
-  const rawWidth = parseFloat(calibrationWidthInput.value);
-  const targetCm = unitSelect.value === "in" ? rawWidth * 2.54 : rawWidth;
-  if (isNaN(targetCm) || targetCm <= 0) {
-    calibrationStatus.textContent = "⚠️ Sila masukkan lebar kad (contoh: 5.00).";
-    return;
   }
 
-  const card = detectBlackCard();
-  if (!card) {
-    calibrationStatus.textContent =
-      "🔴 Kad penentukuran hitam tidak dikesan. Pastikan kad hitam kelihatan penuh dalam gambar.";
-    calibration = null;
-    formulaStatus.textContent = "Belum ditentukur";
-    updateCheckButtons();
-    return;
+  if (unitSelect) {
+    unitSelect.addEventListener("change", () => {
+      updateUnitLabels();
+      loadMeasurements();
+      if (state.targets) computeTargets(); // formula papar semula dalam unit baharu
+    });
   }
+  const saveMeasurementsButton = $("saveMeasurements");
+  if (saveMeasurementsButton) saveMeasurementsButton.addEventListener("click", saveMeasurements);
 
-  const cmPerPixel = targetCm / card.widthPx;
-  calibration = { cmPerPixel };
-  try {
-    localStorage.setItem(STORAGE_KEYS.calibration, JSON.stringify(calibration));
-  } catch (e) { /* teruskan */ }
-
-  formulaStatus.textContent = `${cmPerPixel.toFixed(4)} cm/piksel`;
-  calibrationStatus.textContent =
-    `🟢 Kad dikesan (${card.widthPx} px). Skala: ${cmPerPixel.toFixed(4)} cm/piksel. Label dimensi pada gambar kini dalam cm.`;
-  updateCheckButtons();
-  if (manualPoints.length === 2) {
-    computeManualMeasurement();
-  }
-  renderMeasureCanvas();
-}
-
-function detectBlackCard() {
-  const width = canvasInput.width;
-  const height = canvasInput.height;
-  if (!width || !height) return null;
-
-  const ctx = canvasInput.getContext("2d");
-  const img = ctx.getImageData(0, 0, width, height);
-  const data = img.data;
-
-  const isBlack = (x, y) => {
-    const i = (y * width + x) * 4;
-    return (data[i] + data[i + 1] + data[i + 2]) / 3 < 60;
+  // =======================================================
+  // SEKSYEN 2 — TETAPAN POLA + FORMULA
+  // =======================================================
+  // Formula setiap bahagian pola (kunci = id ukuran Seksyen 1).
+  const FORMULAS = {
+    baju: {
+      label: "Baju",
+      parts: {
+        badanDepan: {
+          label: "Badan Depan",
+          rows: [
+            { name: "Lebar Dada Depan", formula: "¼ Keliling Dada + 3 cm r Clarence", calc: (m) => (m.chest ? m.chest / 4 + 3 : null) },
+            { name: "Labuh Depan", formula: "Labuh Baju + 2 cm", calc: (m) => (m.labuhBaju ? m.labuhBaju + 2 : null) },
+          ],
+        },
+        badanBelakang: {
+          label: "Badan Belakang",
+          rows: [
+            { name: "Lebar Belakang", formula: "¼ Keliling Dada − 1 cm", calc: (m) => (m.chest ? m.chest / 4 - 1 : null) },
+            { name: "Labuh Belakang", formula: "Labuh Baju", calc: (m) => (m.labuhBaju ? m.labuhBaju : null) },
+          ],
+        },
+        lengan: {
+          label: "Lengan",
+          rows: [
+            { name: "Panjang Lengan", formula: "Labuh Lengan", calc: (m) => (m.labuhLengan ? m.labuhLengan : null) },
+            { name: "Lebar Lengan Atas", formula: "½ Bukaan Tangan + 3 cm", calc: (m) => (m.bukaanTangan ? m.bukaanTangan / 2 + 3 : null) },
+            { name: "Bukaan Lengan", formula: "½ Bukaan Tangan", calc: (m) => (m.bukaanTangan ? m.bukaanTangan / 2 : null) },
+          ],
+        },
+        kolar: {
+          label: "Kolar / Leher",
+          rows: [
+            { name: "Lebar Leher Belakang", formula: "¼ Keliling Leher − 1 cm", calc: (m) => (m.neck ? m.neck / 4 - 1 : null) },
+            { name: "Lebar Leher Depan", formula: "¼ Keliling Leher", calc: (m) => (m.neck ? m.neck / 4 : null) },
+          ],
+        },
+      },
+    },
+    skirt: {
+      label: "Skirt",
+      parts: {
+        skirtDepan: {
+          label: "Skirt Depan",
+          rows: [
+            { name: "Lebar Pinggang Depan", formula: "¼ Keliling Pinggang + 1 cm rese", calc: (m) => (m.waist ? m.waist / 4 + 1 : null) },
+            { name: "Lebar Pinggul Depan", formula: "¼ Keliling Pinggul + 1 cm", calc: (m) => (m.hip ? m.hip / 4 + 1 : null) },
+            { name: "Labuh Skirt Depan", formula: "Labuh Kain", calc: (m) => (m.labuhSkirt ? m.labuhSkirt : null) },
+          ],
+        },
+        skirtBelakang: {
+          label: "Skirt Belakang",
+          rows: [
+            { name: "Lebar Pinggang Belakang", formula: "¼ Keliling Pinggang + 1 cm rese", calc: (m) => (m.waist ? m.waist / 4 + 1 : null) },
+            { name: "Lebar Pinggul Belakang", formula: "¼ Keliling Pinggul − 1 cm", calc: (m) => (m.hip ? m.hip / 4 - 1 : null) },
+            { name: "Labuh Skirt Belakang", formula: "Labuh Kain", calc: (m) => (m.labuhSkirt ? m.labuhSkirt : null) },
+          ],
+        },
+      },
+    },
+    seluar: {
+      label: "Seluar",
+      parts: {
+        seluarDepan: {
+          label: "Seluar Depan",
+          rows: [
+            { name: "Lebar Pinggang Depan", formula: "¼ Keliling Pinggang + 2 cm", calc: (m) => (m.waist ? m.waist / 4 + 2 : null) },
+            { name: "Lebar Pinggul Depan", formula: "¼ Keliling Pinggul", calc: (m) => (m.hip ? m.hip / 4 : null) },
+            { name: "Labuh Seluar", formula: "Labuh Kain / Seluar", calc: (m) => (m.labuhSkirt ? m.labuhSkirt : null) },
+          ],
+        },
+        seluarBelakang: {
+          label: "Seluar Belakang",
+          rows: [
+            { name: "Lebar Pinggang Belakang", formula: "¼ Keliling Pinggang + 4 cm", calc: (m) => (m.waist ? m.waist / 4 + 4 : null) },
+            { name: "Lebar Pinggul Belakang", formula: "¼ Keliling Pinggul + 1 cm", calc: (m) => (m.hip ? m.hip / 4 + 1 : null) },
+          ],
+        },
+      },
+    },
+    dress: {
+      label: "Dress",
+      parts: {
+        dressAtas: {
+          label: "Dress Atas (Bodis)",
+          rows: [
+            { name: "Lebar Dada", formula: "¼ Keliling Dada + 2 cm", calc: (m) => (m.chest ? m.chest / 4 + 2 : null) },
+            { name: "Lebar Bahu", formula: "Lebar Bahu − 1 cm", calc: (m) => (m.shoulder ? m.shoulder - 1 : null) },
+          ],
+        },
+        dressRok: {
+          label: "Dress Rok",
+          rows: [
+            { name: "Lebar Pinggul", formula: "¼ Keliling Pinggul + 2 cm", calc: (m) => (m.hip ? m.hip / 4 + 2 : null) },
+            { name: "Labuh Dress", formula: "Labuh Baju + Labuh Kain ÷ 2", calc: (m) => (m.labuhBaju && m.labuhSkirt ? m.labuhBaju + m.labuhSkirt / 2 : null) },
+          ],
+        },
+        lenganDress: {
+          label: "Lengan Dress",
+          rows: [
+            { name: "Panjang Lengan", formula: "Labuh Lengan − 2 cm", calc: (m) => (m.labuhLengan ? m.labuhLengan - 2 : null) },
+            { name: "Bukaan Lengan", formula: "½ Bukaan Tangan + 1 cm", calc: (m) => (m.bukaanTangan ? m.bukaanTangan / 2 + 1 : null) },
+          ],
+        },
+      },
+    },
   };
 
-  let best = null;
-  for (let y = 0; y < height; y += 2) {
-    let runStart = -1;
-    for (let x = 0; x <= width; x++) {
-      const black = x < width && isBlack(x, y);
-      if (black && runStart === -1) {
-        runStart = x;
-      } else if (!black && runStart !== -1) {
-        const span = x - runStart;
-        if (!best || span > best.span) {
-          best = { y, x0: runStart, x1: x - 1, span };
-        }
-        runStart = -1;
-      }
-    }
+  const garmentTypeSelect = $("garmentType");
+  const patternPartSelect = $("patternPart");
+  const patternSelectionStatus = $("patternSelectionStatus");
+
+  // =======================================================
+  // KEADAAN GLOBAL
+  // =======================================================
+  const state = {
+    measurements: null,
+    garment: null,
+    part: null,
+    targets: null, // [{ id, name, formula, target }]
+    calibration: null, // { pxPerCm }
+    captureScale: 1,
+    pieces: [], // keping pola yang diukur
+    activePiece: -1,
+    checkRows: [],
+    passport: [],
+    lineDetected: false,
+  };
+
+  function resetPatternPart() {
+    state.part = null;
+    state.targets = null;
+    patternPartSelect.innerHTML = "";
+    const opt = document.createElement("option");
+    opt.value = "";
+    opt.textContent = "-- Pilih bahagian pola --";
+    patternPartSelect.appendChild(opt);
+    patternPartSelect.disabled = true;
   }
 
-  if (!best || best.span < width * 0.15) {
-    return null;
-  }
-
-  const midX = Math.floor((best.x0 + best.x1) / 2);
-  let top = best.y;
-  let bottom = best.y;
-  while (top > 0 && isBlack(midX, top - 1)) top--;
-  while (bottom < height - 1 && isBlack(midX, bottom + 1)) bottom++;
-  const thickness = bottom - top + 1;
-  if (thickness < 8 || thickness > height * 0.5) {
-    return null;
-  }
-
-  const midY = Math.floor((top + bottom) / 2);
-  let x0 = best.x0;
-  let x1 = best.x1;
-  while (x0 > 0 && isBlack(x0 - 1, midY)) x0--;
-  while (x1 < width - 1 && isBlack(x1 + 1, midY)) x1++;
-
-  return { x0, x1, top, bottom, widthPx: x1 - x0 + 1 };
-}
-
-// =========================================================
-// 11. UKUR MANUAL: KLIK DUA TITIK PADA GAMBAR
-// =========================================================
-function onCapturedImageClick(event) {
-  if (!captured) return;
-  const rect = capturedImage.getBoundingClientRect();
-  const natural = { w: capturedImage.naturalWidth, h: capturedImage.naturalHeight };
-  if (!natural.w || !natural.h) return;
-
-  const x = Math.round((event.clientX - rect.left) * (natural.w / rect.width));
-  const y = Math.round((event.clientY - rect.top) * (natural.h / rect.height));
-
-  if (manualPoints.length === 0) {
-    manualPoints = [{ x, y }];
-    updateStatus("Titik mula ditanda. Klik titik tamat pada gambar.");
-  } else {
-    manualPoints[1] = { x, y };
-    updateStatus("Dua titik ditanda. Tekan ✅ Tambah ke Semakan.");
-  }
-
-  renderMeasureCanvas();
-
-  if (manualPoints.length === 2) {
-    computeManualMeasurement();
-  }
-}
-
-function computeManualMeasurement() {
-  if (manualPoints.length !== 2) return;
-  if (!calibration) {
-    patternMeasurement.textContent = "Perlu penentukuran";
-    updateStatus("⚠️ Tentukan skala terlebih dahulu (kad penentukuran).");
-    updateCheckButtons();
-    return;
-  }
-  const dx = manualPoints[1].x - manualPoints[0].x;
-  const dy = manualPoints[1].y - manualPoints[0].y;
-  const lengthPx = Math.sqrt(dx * dx + dy * dy);
-  const cm = lengthPx * calibration.cmPerPixel;
-  patternMeasurement.textContent = fmtCm(cm);
-  autoMeasure = { cm, lengthPx, ok: true, source: "manual" };
-  updateStatus(`Ukur manual: ${lengthPx.toFixed(0)} px = ${fmtCm(cm)}. Tekan ✅ Tambah ke Semakan.`);
-  updateCheckButtons();
-}
-
-// =========================================================
-// 12. UKUR AUTOMATIK (daripada hasil visi sebenar)
-// =========================================================
-function resetChips() {
-  if (chipLength) chipLength.classList.remove("active");
-  if (chipWidth) chipWidth.classList.remove("active");
-  if (chipHeight) chipHeight.classList.remove("active");
-}
-
-function setAutoMeasureFromChip(which) {
-  if (!captured) {
-    updateStatus("⚠️ Ambil gambar pola terlebih dahulu.");
-    return;
-  }
-  if (!calibration) {
-    updateStatus("⚠️ Tentukan skala penentukuran terlebih dahulu (Seksyen 3).");
-    return;
-  }
-  if (!visionResult || !visionResult.pieces || !visionResult.pieces.length) {
-    updateStatus("⚠️ Tiada pola dikesan. Cuba gambar semula dengan garisan lebih jelas.");
-    return;
-  }
-  const piece = visionResult.pieces[selectedPiece] || visionResult.pieces[0];
-  resetChips();
-  const s = visionResult.scaleBack || 1;
-  let px;
-  let label;
-  if (which === "length") {
-    px = piece.widthPx * s;
-    if (chipLength) chipLength.classList.add("active");
-    label = "Lebar pola";
-  } else if (which === "width") {
-    px = piece.longest * s;
-    if (chipWidth) chipWidth.classList.add("active");
-    label = "Garisan terpanjang";
-  } else {
-    px = piece.heightPx * s;
-    if (chipHeight) chipHeight.classList.add("active");
-    label = "Tinggi pola";
-  }
-
-  const cm = px * calibration.cmPerPixel;
-  patternMeasurement.textContent = fmtCm(cm);
-  autoMeasure = { cm, lengthPx: px, ok: true, source: which };
-  lineStatus.textContent = "Garisan dikesan";
-  updateStatus(`${label} (${getPieceDisplayName(selectedPiece)}) dipilih: ${px.toFixed(0)} px = ${fmtCm(cm)}. Tekan ✅ Tambah ke Semakan.`);
-  updateCheckButtons();
-}
-
-function autoMeasureFunction() {
-  setAutoMeasureFromChip("length");
-}
-
-// Keping pola: nama & chips
-function getPieceDisplayName(idx) {
-  return pieceNames[idx] || `Keping ${idx + 1}`;
-}
-
-function renderPieceChips() {
-  if (!pieceChips) return;
-  pieceChips.innerHTML = "";
-  if (!visionResult || !visionResult.pieces || !visionResult.pieces.length) {
-    pieceChips.style.display = "none";
-    if (pieceRename) pieceRename.style.display = "none";
-    return;
-  }
-  // Baris nama keping dipaparkan walaupun 1 keping (nama masuk jadual & Passport)
-  if (pieceRename) pieceRename.style.display = "flex";
-  if (visionResult.pieces.length <= 1) {
-    pieceChips.style.display = "none";
-    if (pieceNameInput) pieceNameInput.value = pieceNames[selectedPiece] || "";
-    return;
-  }
-  pieceChips.style.display = "flex";
-  visionResult.pieces.forEach((piece, idx) => {
-    const chip = document.createElement("button");
-    chip.type = "button";
-    chip.className = "chip" + (idx === selectedPiece ? " active" : "");
-    const name = getPieceDisplayName(idx);
-    chip.textContent = `${name} (${piece.widthPx}×${piece.heightPx})`;
-    chip.addEventListener("click", () => {
-      selectedPiece = idx;
-      autoMeasure = null;
-      resetChips();
-      renderPieceChips();
-      renderMeasureCanvas();
-      updateStatus(`${name} dipilih. Pilih ukuran automatik di bawah.`);
+  function populatePatternParts() {
+    const garment = FORMULAS[state.garment];
+    resetPatternPart();
+    if (!garment) return;
+    patternPartSelect.disabled = false;
+    Object.entries(garment.parts).forEach(([key, part]) => {
+      const opt = document.createElement("option");
+      opt.value = key;
+      opt.textContent = part.label;
+      patternPartSelect.appendChild(opt);
     });
-    pieceChips.appendChild(chip);
-  });
-  if (pieceNameInput) pieceNameInput.value = pieceNames[selectedPiece] || "";
-}
-
-function renamePieceFunction() {
-  if (!pieceNameInput) return;
-  const name = pieceNameInput.value.trim();
-  if (!name) {
-    updateStatus("⚠️ Taip nama keping dahulu (cth: Depan, Belakang, Lengan).");
-    return;
-  }
-  pieceNames[selectedPiece] = name;
-  try {
-    localStorage.setItem(STORAGE_KEYS.pieceNames, JSON.stringify(pieceNames));
-  } catch (e) { /* abaikan */ }
-  renderPieceChips();
-  renderMeasureCanvas();
-  updateStatus(`🟢 Keping ${selectedPiece + 1} dinamakan "${name}".`);
-}
-
-// =========================================================
-// 13. SEMAKAN UKURAN (multi-baris)
-// =========================================================
-function updateCheckButtons() {
-  const key = getTargetKey(garmentType.value, patternPart.value);
-  const hasTarget = manualTargets[key] !== undefined && manualTargets[key] !== null && !isNaN(manualTargets[key]);
-  const ready = garmentType.value && patternPart.value && hasTarget;
-  if (manualCheckButton) {
-    manualCheckButton.disabled = !(ready && autoMeasure && autoMeasure.ok);
-  }
-  if (autoMeasureButton) {
-    autoMeasureButton.disabled = !captured;
-  }
-  if (saveChecksButton) {
-    saveChecksButton.disabled = !lastChecks.length;
-  }
-}
-
-function resetMeasurement() {
-  autoMeasure = null;
-  manualPoints = [];
-  patternMeasurement.textContent = "Menunggu imbasan";
-  resetChips();
-  renderMeasureCanvas();
-}
-
-function runCheck() {
-  const type = garmentType.value;
-  const part = patternPart.value;
-  if (!type || !part) {
-    updateStatus("⚠️ Pilih jenis pakaian dan bahagian pola dahulu.");
-    return;
-  }
-  if (!autoMeasure || !autoMeasure.ok) {
-    updateStatus("⚠️ Ukur pola dahulu (pilih butiran ukuran atau klik dua titik).");
-    return;
   }
 
-  const target = manualTargets[getTargetKey(type, part)];
-  if (target === undefined || target === null || isNaN(target)) {
-    updateStatus("⚠️ Sasaran ukuran belum dimasukkan. Sila isikan sasaran manual di Seksyen 2.");
-    return;
-  }
+  function computeTargets() {
+    state.measurements = readMeasurements();
+    const garment = FORMULAS[state.garment];
+    const part = garment ? garment.parts[state.part] : null;
 
-  const label = getPartLabel(type, part);
-  const pieceLabel = visionResult && visionResult.pieces && visionResult.pieces.length > 1
-    ? getPieceDisplayName(selectedPiece)
-    : null;
-  const fullLabel = pieceLabel ? `${label} — ${pieceLabel}` : label;
-  lastChecks = lastChecks.filter(check => check.label !== fullLabel);
-
-  const measured = autoMeasure.cm;
-  const diff = measured - target;
-  const pass = Math.abs(diff) <= TOLERANCE;
-
-  lastChecks.push({ label: fullLabel, target, measured, diff, pass });
-
-  renderCheckTable();
-  renderResult(pass, measured, target, diff, fullLabel);
-  updateCheckButtons();
-  updateStatus(pass
-    ? `🟢 ${fullLabel} LULUS ditambah. Pilih bahagian lain atau 💾 Simpan Semakan.`
-    : `🔴 ${fullLabel} PERLU PEMBETULAN ditambah. Pilih bahagian lain atau 💾 Simpan Semakan.`);
-}
-
-function saveChecksFunction() {
-  if (!lastChecks.length) {
-    updateStatus("⚠️ Tiada baris semakan untuk disimpan.");
-    return;
-  }
-  addToPassport(lastChecks);
-  const count = lastChecks.length;
-  const lulus = lastChecks.filter(check => check.pass).length;
-  lastChecks = [];
-  renderCheckTable();
-  updateCheckButtons();
-  updateStatus(`🟢 ${count} semakan disimpan dalam Passport (${lulus} lulus). Ambil gambar baharu atau pilih bahagian lain.`);
-}
-
-function renderCheckTable() {
-  checkTableBody.innerHTML = "";
-  if (!lastChecks.length) {
-    const row = document.createElement("tr");
-    row.className = "empty-row";
-    const cell = document.createElement("td");
-    cell.colSpan = 5;
-    cell.textContent = "Belum ada data semakan.";
-    row.appendChild(cell);
-    checkTableBody.appendChild(row);
-    return;
-  }
-  for (const check of lastChecks) {
-    const row = document.createElement("tr");
-
-    const tdLabel = document.createElement("td");
-    tdLabel.textContent = check.label;
-    tdLabel.setAttribute("data-label", "Ukuran");
-
-    const tdTarget = document.createElement("td");
-    tdTarget.textContent = fmtCm(check.target);
-    tdTarget.setAttribute("data-label", "Sasaran");
-
-    const tdMeasured = document.createElement("td");
-    tdMeasured.textContent = fmtCm(check.measured);
-    tdMeasured.setAttribute("data-label", "Ukuran Pola");
-
-    const tdDiff = document.createElement("td");
-    tdDiff.textContent = fmtDiff(check.diff);
-    tdDiff.setAttribute("data-label", "Beza");
-
-    const tdResult = document.createElement("td");
-    tdResult.textContent = check.pass ? "LULUS" : "PEMBETULAN";
-    tdResult.className = check.pass ? "result-pass" : "result-fail";
-    tdResult.setAttribute("data-label", "Keputusan");
-
-    row.appendChild(tdLabel);
-    row.appendChild(tdTarget);
-    row.appendChild(tdMeasured);
-    row.appendChild(tdDiff);
-    row.appendChild(tdResult);
-    checkTableBody.appendChild(row);
-  }
-}
-
-function renderResult(pass, measured, target, diff, label) {
-  if (pass) {
-    resultTitle.textContent = "🟢 LULUS";
-    resultTitle.className = "result-pass";
-    resultMessage.textContent =
-      `${label}: ukuran pola ${fmtCm(measured)} berada dalam toleransi sasaran ${fmtCm(target)} (beza ${fmtDiff(diff)}).`;
-  } else {
-    resultTitle.textContent = "🔴 PERLU PEMBETULAN";
-    resultTitle.className = "result-fail";
-    const advice = diff > 0 ? "Kurangkan ukuran pola." : "Tambahkan ukuran pola.";
-    resultMessage.textContent =
-      `${label}: sasaran ${fmtCm(target)}, ukuran pola ${fmtCm(measured)} (beza ${fmtDiff(diff)}). ${advice}`;
-  }
-}
-
-// =========================================================
-// 14. SMART-POLA PASSPORT
-// =========================================================
-function loadPassport() {
-  try {
-    const saved = localStorage.getItem(STORAGE_KEYS.passport);
-    return saved ? JSON.parse(saved) : [];
-  } catch (e) {
-    return [];
-  }
-}
-
-function savePassport(entries) {
-  try {
-    localStorage.setItem(STORAGE_KEYS.passport, JSON.stringify(entries));
-  } catch (e) { /* teruskan */ }
-}
-
-function addToPassport(checks) {
-  const entries = loadPassport();
-  entries.unshift({
-    date: new Date().toLocaleString("ms-MY"),
-    checks
-  });
-  while (entries.length > 30) {
-    entries.pop();
-  }
-  savePassport(entries);
-  renderPassport();
-}
-
-function renderPassport() {
-  const entries = loadPassport();
-  passportList.innerHTML = "";
-
-  let total = 0;
-  let lulus = 0;
-  for (const entry of entries) {
-    total += entry.checks.length;
-    lulus += entry.checks.filter(c => c.pass).length;
-  }
-  passportTotal.textContent = String(total);
-  passportLulus.textContent = String(lulus);
-
-  if (!entries.length) {
-    const item = document.createElement("li");
-    item.className = "passport-empty";
-    item.textContent = "Belum ada rekod semakan.";
-    passportList.appendChild(item);
-    return;
-  }
-
-  for (const entry of entries) {
-    const item = document.createElement("li");
-    const date = document.createElement("div");
-    date.className = "passport-date";
-    date.textContent = entry.date;
-    item.appendChild(date);
-
-    for (const check of entry.checks) {
-      const line = document.createElement("div");
-      line.className = "passport-line";
-      line.innerHTML =
-        `${check.pass ? "🟢" : "🔴"} <strong>${check.label}</strong>: ` +
-        `${fmtCm(check.measured)} (sasaran ${fmtCm(check.target)}, beza ${fmtDiff(check.diff)}) — ` +
-        (check.pass ? "LULUS" : "PERLU PEMBETULAN");
-      item.appendChild(line);
+    if (!garment || !part) {
+      state.targets = null;
+      renderFormula();
+      return;
     }
-    passportList.appendChild(item);
+
+    state.targets = part.rows
+      .map((row, i) => ({
+        id: state.garment + "_" + state.part + "_" + i,
+        name: row.name,
+        formula: row.formula,
+        target: num(row.calc(state.measurements)),
+      }))
+      .filter((t) => t.target !== null);
+
+    renderFormula();
   }
-}
 
-function clearPassportFunction() {
-  savePassport([]);
-  renderPassport();
-  updateStatus("Rekod Passport dikosongkan.");
-}
+  function renderFormula() {
+    const detail = $("formulaDetail");
+    if (!detail) return;
+    const garment = FORMULAS[state.garment];
+    const part = garment ? garment.parts[state.part] : null;
 
-// =========================================================
-// 15. EVENT
-// =========================================================
-function safeListen(element, type, handler) {
-  if (element) {
-    element.addEventListener(type, handler);
-  } else {
-    console.error("SMART-POLA: elemen tidak ditemui untuk acara:", type);
-  }
-}
+    if (!garment || !part) {
+      detail.innerHTML = "Belum tersedia";
+      return;
+    }
 
-safeListen(saveMeasurementsBtn, "click", saveMeasurementsFunction);
-
-let previousUnit = unitSelect.value;
-safeListen(unitSelect, "change", () => {
-  convertInputValues(previousUnit, unitSelect.value);
-  previousUnit = unitSelect.value;
-  updateUnitLabels();
-  refreshTargetInfo();
-  renderCheckTable();
-  renderPassport();
-});
-
-safeListen(garmentType, "change", () => {
-  populatePatternParts();
-  resetMeasurement();
-});
-safeListen(patternPart, "change", () => {
-  resetMeasurement();
-  refreshTargetInfo();
-  if (targetStatus) targetStatus.textContent = "";
-});
-safeListen(saveTargetButton, "click", saveTargetFunction);
-
-safeListen(cameraButton, "click", onCameraButtonClick);
-safeListen(flipCameraButton, "click", flipCameraFunction);
-
-safeListen(calibrateButton, "click", calibrateFunction);
-safeListen(capturedImage, "click", onCapturedImageClick);
-
-safeListen(manualCheckButton, "click", runCheck);
-safeListen(autoMeasureButton, "click", autoMeasureFunction);
-safeListen(saveChecksButton, "click", saveChecksFunction);
-
-safeListen(chipLength, "click", () => setAutoMeasureFromChip("length"));
-safeListen(chipWidth, "click", () => setAutoMeasureFromChip("width"));
-safeListen(chipHeight, "click", () => setAutoMeasureFromChip("height"));
-safeListen(renamePieceButton, "click", renamePieceFunction);
-
-// Slider kepekaan: analisis semula secara langsung (dengan debounce)
-safeListen(edgeSensitivity, "input", () => {
-  sensitivity = parseInt(edgeSensitivity.value, 10) || 5;
-  if (sensitivityValue) sensitivityValue.textContent = String(sensitivity);
-  if (!captured) return;
-  if (sensitivityTimer) clearTimeout(sensitivityTimer);
-  sensitivityTimer = setTimeout(() => {
-    updateStatus("Menganalisis semula (kepekaan " + sensitivity + ")...");
-    setTimeout(() => {
-      try {
-        visionResult = runVision();
-        if (selectedPiece >= visionResult.pieces.length) {
-          selectedPiece = 0;
-        }
-        autoMeasure = null;
-        renderMeasureCanvas();
-        renderPieceChips();
-        updateStatus(visionResult.pieces.length
-          ? `Analisis selesai (kepekaan ${sensitivity}): ${visionResult.pieces.length} keping dikesan.`
-          : `Tiada garisan pada kepekaan ${sensitivity}. Cuba laraskan slider.`);
-      } catch (error) {
-        console.error(error);
-        updateStatus("Analisis semula gagal.");
+    const missing = [];
+    const lines = part.rows.map((row) => {
+      const v = row.calc(state.measurements || readMeasurements());
+      if (v === null || !Number.isFinite(v)) {
+        missing.push(row);
+        return `<li><strong>${row.name}</strong> — <code>${row.formula}</code> — <em>ukuran belum diisi di Seksyen 1</em></li>`;
       }
-    }, 30);
-  }, 250);
-});
-safeListen(edgeSensitivity, "change", () => {
-  try {
-    localStorage.setItem(STORAGE_KEYS.sensitivity, String(sensitivity));
-  } catch (e) { /* abaikan */ }
-});
+      return `<li><strong>${row.name}</strong> — <code>${row.formula}</code> = <strong>${fmt(v)}</strong></li>`;
+    });
 
-safeListen(clearPassportButton, "click", clearPassportFunction);
+    let html = `<ul>${lines.join("")}</ul>`;
+    if (missing.length > 0) {
+      html += `<p style="margin:8px 0 0;color:var(--warn);">⚠️ ${missing.length} formula belum dapat dikira — lengkapkan ukuran berkaitan di Seksyen 1.</p>`;
+    }
+    detail.innerHTML = html;
+    setStatus(patternSelectionStatus, `✅ Formula ${garment.label} — ${part.label} dijana.`, "ok");
+  }
 
-// =========================================================
-// 16. INITIAL STATUS
-// =========================================================
-updateStatus("Kamera belum diaktifkan.");
-updateUnitLabels();
-try {
-  const savedSensitivity = parseInt(localStorage.getItem(STORAGE_KEYS.sensitivity), 10);
-  if (savedSensitivity >= 1 && savedSensitivity <= 10) {
-    sensitivity = savedSensitivity;
+  function onGarmentChange() {
+    state.garment = garmentTypeSelect.value || null;
+    resetPatternPart();
+    state.targets = null;
+    renderFormula();
+    if (state.garment) {
+      populatePatternParts();
+      setStatus(patternSelectionStatus, `Jenis pakaian: ${FORMULAS[state.garment].label}. Pilih bahagian pola.`, "warn");
+    } else {
+      setStatus(patternSelectionStatus, "", "");
+    }
   }
-  const savedNames = JSON.parse(localStorage.getItem(STORAGE_KEYS.pieceNames) || "{}");
-  if (savedNames && typeof savedNames === "object") {
-    pieceNames = savedNames;
+
+  function onPartChange() {
+    state.part = patternPartSelect.value || null;
+    if (state.part) {
+      computeTargets();
+    } else {
+      state.targets = null;
+      renderFormula();
+      setStatus(patternSelectionStatus, "", "");
+    }
   }
-} catch (e) { /* abaikan */ }
-if (edgeSensitivity) edgeSensitivity.value = String(sensitivity);
-if (sensitivityValue) sensitivityValue.textContent = String(sensitivity);
-loadManualTargets();
-loadSavedMeasurements();
-populatePatternParts();
-renderPassport();
+
+  if (garmentTypeSelect) garmentTypeSelect.addEventListener("change", onGarmentChange);
+  if (patternPartSelect) patternPartSelect.addEventListener("change", onPartChange);
+
+  // =======================================================
+  // SEKSYEN 3 — IMBAS POLA (KAMERA + PENENTUKURAN)
+  // =======================================================
+  const video = $("camera");
+  const canvasInput = $("canvasInput");
+  const overlayCanvas = $("overlayCanvas");
+  const capturedImage = $("capturedImage");
+  const measureCanvas = $("measureCanvas");
+  const cameraButton = $("cameraButton");
+  const flipCameraButton = $("flipCamera");
+  const recalibrateButton = $("recalibrateButton");
+  const statusEl = $("status");
+
+  let stream = null;
+  let facingMode = "environment";
+
+  async function openCamera() {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      setStatus(statusEl, "Kamera tidak disokong pelayar ini.", "fail");
+      return;
+    }
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: facingMode }, width: { ideal: 1920 }, height: { ideal: 1080 } },
+        audio: false,
+      });
+      video.srcObject = stream;
+      await video.play().catch(() => {});
+      cameraButton.textContent = "📸 Ambil Gambar";
+      flipCameraButton.hidden = false;
+      setStatus(statusEl, "Kamera aktif. Letakkan pola + kad hitam 10 cm, kemudian ambil gambar.", "ok");
+    } catch (err) {
+      setStatus(statusEl, "Kamera gagal: " + err.name + " — benarkan kebenaran kamera.", "fail");
+    }
+  }
+
+  function closeCamera() {
+    if (stream) {
+      stream.getTracks().forEach((t) => t.stop());
+      stream = null;
+    }
+    cameraButton.textContent = "📷 Buka Kamera";
+    flipCameraButton.hidden = true;
+  }
+
+  async function onCameraButton() {
+    if (!stream) {
+      await openCamera();
+      return;
+    }
+    capturePhoto();
+  }
+
+  function capturePhoto() {
+    if (!video.videoWidth) {
+      setStatus(statusEl, "Kamera belum sedia — cuba lagi.", "warn");
+      return;
+    }
+    canvasInput.width = video.videoWidth;
+    canvasInput.height = video.videoHeight;
+    canvasInput.getContext("2d").drawImage(video, 0, 0);
+    const dataUrl = canvasInput.toDataURL("image/jpeg", 0.9);
+    closeCamera();
+    setStatus(statusEl, "Gambar diambil. Mengira skala daripada kad 10 cm × 10 cm...", "ok");
+    loadCapturedImage(dataUrl);
+  }
+
+  function loadCapturedImage(dataUrl) {
+    const img = new Image();
+    img.onload = () => {
+      capturedImage.src = dataUrl;
+      capturedImage.style.display = "block";
+      $("noImageMessage").style.display = "none";
+      state.captureScale = 1;
+      calibrateFromCard(img);
+      // Ukur automatik serta-merta — ukuran pola terus dipaparkan di Seksyen 4.
+      if (state.calibration) autoMeasure();
+    };
+    img.src = dataUrl;
+  }
+
+  // ---- Penentukuran automatik: kad hitam tetap 10 cm × 10 cm ----
+  function calibrateFromCard(img) {
+    const w = img.naturalWidth;
+    const h = img.naturalHeight;
+    measureCanvas.width = w;
+    measureCanvas.height = h;
+    const ctx = measureCanvas.getContext("2d");
+    ctx.drawImage(img, 0, 0);
+
+    let data;
+    try {
+      data = ctx.getImageData(0, 0, w, h).data;
+    } catch (e) {
+      setStatus(statusEl, "Gagal membaca imej untuk penentukuran.", "fail");
+      return;
+    }
+
+    // Cari kotak gelap besar (kad hitam) — imbas sampel setiap 4 px.
+    const isDark = (i) => data[i] < 60 && data[i + 1] < 60 && data[i + 2] < 60;
+    let minX = w, maxX = -1, minY = h, maxY = -1, count = 0;
+    for (let y = 0; y < h; y += 4) {
+      for (let x = 0; x < w; x += 4) {
+        const i = (y * w + x) * 4;
+        if (isDark(i)) {
+          count++;
+          if (x < minX) minX = x;
+          if (x > maxX) maxX = x;
+          if (y < minY) minY = y;
+          if (y > maxY) maxY = y;
+        }
+      }
+    }
+
+    if (maxX < 0 || count < 200) {
+      setStatus(statusEl, "Kad hitam 10 cm × 10 cm tidak dikesan — pastikan kad kelihatan penuh dalam gambar, atau tekan 🔄 Muat Semula Skala.", "fail");
+      return;
+    }
+
+    const cardW = maxX - minX;
+    const cardH = maxY - minY;
+    if (cardW < 40 || cardH < 40) {
+      setStatus(statusEl, "Kad hitam terlalu kecil dalam gambar — dekatkan kamera.", "fail");
+      return;
+    }
+
+    // Kad 10 cm × 10 cm — skala daripada purata dua dimensi supaya lebih tepat.
+    const pxPerCm = (cardW + cardH) / 2 / 10;
+    state.calibration = { pxPerCm, card: { x0: minX, y0: minY, x1: maxX, y1: maxY } };
+    setStatus(statusEl, "Skala siap. Ukuran pola dipaparkan di Seksyen 4 — klik dua titik pada gambar untuk ukur bahagian lain.", "ok");
+    state.lineDetected = true;
+    $("lineStatus").textContent = "Kad 10 cm × 10 cm dikesan";
+    $("formulaStatus").textContent = pxPerCm.toFixed(1) + " px/cm";
+    $("autoMeasureButton").disabled = false;
+    $("manualCheckButton").disabled = false;
+  }
+
+  // ---- Muat semula skala secara manual (klik 2 hujung kad 10 cm) ----
+  let manualCalibMode = false;
+  let calibClicks = [];
+
+  function startManualCalibration() {
+    if (capturedImage.style.display === "none" || !capturedImage.naturalWidth) {
+      setStatus(statusEl, "Ambil gambar pola dahulu sebelum memuat semula skala.", "warn");
+      return;
+    }
+    manualCalibMode = true;
+    calibClicks = [];
+    setStatus(statusEl, "Klik dua hujung kad hitam pada gambar (panjang 10 cm), kemudian skala dikira semula.", "warn");
+  }
+
+  function finishManualCalibration(d) {
+    const prevCard = state.calibration && state.calibration.card ? state.calibration.card : null;
+    state.calibration = { pxPerCm: d / 10, card: prevCard };
+    manualCalibMode = false;
+    $("formulaStatus").textContent = (d / 10).toFixed(1) + " px/cm";
+    $("autoMeasureButton").disabled = false;
+    $("manualCheckButton").disabled = false;
+    setStatus(statusEl, "✅ Skala dikira semula. Ukur semula pola dengan klik dua titik.", "ok");
+  }
+
+  recalibrateButton.addEventListener("click", startManualCalibration);
+
+  // ---- Tukar kamera depan/belakang ----
+  flipCameraButton.addEventListener("click", () => {
+    facingMode = facingMode === "environment" ? "user" : "environment";
+    closeCamera();
+    openCamera();
+  });
+
+  cameraButton.addEventListener("click", onCameraButton);
+
+  // =======================================================
+  // SEKSYEN 4 — ANALISIS POLA
+  // =======================================================
+  const sensitivityInput = $("edgeSensitivity");
+  const sensitivityValue = $("sensitivityValue");
+  const pieceChips = $("pieceChips");
+  const pieceRename = $("pieceRename");
+  const pieceNameInput = $("pieceNameInput");
+  const autoMeasureButton = $("autoMeasureButton");
+  const manualCheckButton = $("manualCheckButton");
+  const lockTargetsButton = $("lockTargetsButton");
+  const saveChecksButton = $("saveChecksButton");
+  const checkTableBody = $("checkTableBody");
+
+  sensitivityInput.addEventListener("input", () => {
+    sensitivityValue.textContent = sensitivityInput.value;
+  });
+
+  // ---- Ukur automatik: kotak sempadan pola ----
+  function autoMeasure() {
+    if (!state.calibration) {
+      setStatus(statusEl, "Skala belum dijumpai — pastikan kad hitam kelihatan dalam gambar.", "warn");
+      return;
+    }
+    const ctx = measureCanvas.getContext("2d");
+    const w = measureCanvas.width;
+    const h = measureCanvas.height;
+    let data;
+    try {
+      data = ctx.getImageData(0, 0, w, h).data;
+    } catch (e) {
+      setStatus(statusEl, "Gagal membaca imej.", "fail");
+      return;
+    }
+
+    const thresh = 120 - (sensitivityInput.value - 5) * 8;
+    // Cari piksel GELAP di luar kawasan kad penentukuran (kad turut gelap —
+    // mesti dikecualikan supaya tidak dikira sebagai pola).
+    const calib = state.calibration;
+    const cardRect = calib.card || null;
+    const MARGIN = Math.max(6, calib.pxPerCm); // tepi kad menebal sedikit
+    const inCard = (x, y) =>
+      cardRect &&
+      x >= cardRect.x0 - MARGIN && x <= cardRect.x1 + MARGIN &&
+      y >= cardRect.y0 - MARGIN && y <= cardRect.y1 + MARGIN;
+    let minX = w, maxX = -1, minY = h, maxY = -1;
+    for (let y = 0; y < h; y += 3) {
+      for (let x = 0; x < w; x += 3) {
+        if (inCard(x, y)) continue;
+        const i = (y * w + x) * 4;
+        if (data[i] < thresh && data[i + 1] < thresh && data[i + 2] < thresh) {
+          if (x < minX) minX = x;
+          if (x > maxX) maxX = x;
+          if (y < minY) minY = y;
+          if (y > maxY) maxY = y;
+        }
+      }
+    }
+    if (maxX < 0) {
+      setStatus(statusEl, "Tiada garisan pola dikesan — naikkan kepekaan pengesanan.", "warn");
+      return;
+    }
+
+    const widthCm = (maxX - minX) / calib.pxPerCm;
+    const heightCm = (maxY - minY) / calib.pxPerCm;
+    const longest = Math.hypot(maxX - minX, maxY - minY) / calib.pxPerCm;
+
+    addPiece(widthCm, heightCm, longest);
+    setStatus(statusEl, `📐 Auto: lebar ${fmt(widthCm)}, tinggi ${fmt(heightCm)}. Semak nama keping dan tekan ✅.`, "ok");
+    drawMeasureOverlay(minX, minY, maxX, maxY);
+  }
+
+  function drawMeasureOverlay(x0, y0, x1, y1) {
+    const ctx = measureCanvas.getContext("2d");
+    ctx.strokeStyle = "#2563eb";
+    ctx.lineWidth = Math.max(2, measureCanvas.width / 400);
+    ctx.strokeRect(x0, y0, x1 - x0, y1 - y0);
+    measureCanvas.style.display = "block";
+  }
+
+  // ---- Klik pada gambar: kalibrasi manual ATAU ukur manual ----
+  let measureClicks = [];
+  capturedImage.addEventListener("click", (e) => {
+    const rect = capturedImage.getBoundingClientRect();
+    const x = (e.clientX - rect.left) * (capturedImage.naturalWidth / rect.width);
+    const y = (e.clientY - rect.top) * (capturedImage.naturalHeight / rect.height);
+
+    // Mod kalibrasi manual (klik 2 hujung kad 10 cm)
+    if (manualCalibMode) {
+      calibClicks.push({ x, y });
+      if (calibClicks.length === 2) {
+        const d = Math.hypot(calibClicks[1].x - calibClicks[0].x, calibClicks[1].y - calibClicks[0].y);
+        if (d < 10) {
+          setStatus(statusEl, "Titik terlalu hampir — klik dua hujung kad dengan tepat.", "fail");
+          calibClicks = [];
+          return;
+        }
+        finishManualCalibration(d);
+      } else {
+        setStatus(statusEl, "Titik 1 ditetapkan — klik hujung kedua.", "warn");
+      }
+      return;
+    }
+
+    // Mod ukur manual (klik 2 titik pola)
+    if (!state.calibration) {
+      setStatus(statusEl, "Skala belum dijumpai — pastikan kad hitam kelihatan dalam gambar, atau tekan 🔄 Muat Semula Skala.", "warn");
+      return;
+    }
+    measureClicks.push({ x, y });
+
+    if (measureClicks.length === 2) {
+      const d = Math.hypot(measureClicks[1].x - measureClicks[0].x, measureClicks[1].y - measureClicks[0].y);
+      const cm = d / state.calibration.pxPerCm;
+      const cmH = Math.abs(measureClicks[1].y - measureClicks[0].y) / state.calibration.pxPerCm;
+      const cmW = Math.abs(measureClicks[1].x - measureClicks[0].x) / state.calibration.pxPerCm;
+      addPiece(cmW, cmH, cm);
+      setStatus(statusEl, `Ukuran manual: ${fmt(cm)}. Tekan ✅ untuk tambah ke semakan.`, "ok");
+      drawLine(measureClicks[0], measureClicks[1]);
+      measureClicks = [];
+    } else {
+      setStatus(statusEl, "Titik mula ditetapkan — klik titik tamat.", "warn");
+    }
+  });
+
+  function drawLine(p0, p1) {
+    const ctx = measureCanvas.getContext("2d");
+    ctx.strokeStyle = "#b91c1c";
+    ctx.lineWidth = Math.max(2, measureCanvas.width / 400);
+    ctx.beginPath();
+    ctx.moveTo(p0.x, p0.y);
+    ctx.lineTo(p1.x, p1.y);
+    ctx.stroke();
+    measureCanvas.style.display = "block";
+  }
+
+  // ---- Keping pola ----
+  function addPiece(widthCm, heightCm, longestCm) {
+    state.pieces.push({ name: "Keping " + (state.pieces.length + 1), widthCm, heightCm, longestCm });
+    state.activePiece = state.pieces.length - 1;
+    renderPieces();
+  }
+
+  function renderPieces() {
+    pieceChips.style.display = state.pieces.length > 0 ? "flex" : "none";
+    pieceRename.style.display = state.pieces.length > 0 ? "flex" : "none";
+    pieceChips.innerHTML = "";
+    state.pieces.forEach((p, i) => {
+      const chip = document.createElement("button");
+      chip.type = "button";
+      chip.className = "chip" + (i === state.activePiece ? " active" : "");
+      chip.textContent = `${p.name}: ${fmt(p.longestCm)}`;
+      chip.addEventListener("click", () => {
+        state.activePiece = i;
+        pieceNameInput.value = p.name;
+        renderPieces();
+      });
+      pieceChips.appendChild(chip);
+    });
+    const p = state.pieces[state.activePiece];
+    if (p) {
+      $("chipLength").textContent = `📐 Lebar: ${fmt(p.widthCm)}`;
+      $("chipWidth").textContent = `📏 Terpanjang: ${fmt(p.longestCm)}`;
+      $("chipHeight").textContent = `↕️ Tinggi: ${fmt(p.heightCm)}`;
+      $("patternMeasurement").textContent = fmt(p.longestCm);
+    }
+  }
+
+  $("renamePieceButton").addEventListener("click", () => {
+    const p = state.pieces[state.activePiece];
+    if (p && pieceNameInput.value.trim()) {
+      p.name = pieceNameInput.value.trim();
+      renderPieces();
+      setStatus(statusEl, "Nama keping disimpan.", "ok");
+    }
+  });
+
+  // ---- Kunci semua sasaran ----
+  lockTargetsButton.addEventListener("click", () => {
+    if (!state.targets || state.targets.length === 0) {
+      setStatus(patternSelectionStatus, "Pilih bahagian pola dahulu di Seksyen 2.", "warn");
+      return;
+    }
+    let added = 0;
+    state.targets.forEach((t) => {
+      if (!state.checkRows.some((r) => r.id === t.id)) {
+        state.checkRows.push({ id: t.id, name: t.name, formula: t.formula, target: t.target, measured: null, pieceName: null });
+        added++;
+      }
+    });
+    renderCheckTable();
+    setStatus(patternSelectionStatus, `🔒 ${added} sasaran dikunci ke jadual semakan.`, "ok");
+  });
+
+  // ---- Tambah ukuran ke semakan ----
+  manualCheckButton.addEventListener("click", () => {
+    if (!state.pieces.length) {
+      setStatus(statusEl, "Ukur pola dahulu (manual atau automatik).", "warn");
+      return;
+    }
+    const p = state.pieces[state.activePiece];
+    if (!state.checkRows.length) {
+      setStatus(statusEl, "Kunci sasaran dahulu (🔒) atau pilih bahagian pola di Seksyen 2.", "warn");
+      return;
+    }
+    // Isi baris pertama yang belum diukur.
+    const row = state.checkRows.find((r) => r.measured === null);
+    if (row) {
+      row.measured = p.longestCm;
+      row.pieceName = p.name;
+      renderCheckTable();
+      setStatus(statusEl, `✅ ${p.name} dimasukkan ke "${row.name}".`, "ok");
+    } else {
+      setStatus(statusEl, "Semua baris telah diukur — tambah bahagian pola lain atau simpan ke Passport.", "warn");
+    }
+  });
+
+  // ---- Jadual semakan ----
+  function renderCheckTable() {
+    if (state.checkRows.length === 0) {
+      checkTableBody.innerHTML = '<tr class="empty-row"><td colspan="6">Belum ada data semakan.</td></tr>';
+      saveChecksButton.disabled = true;
+      return;
+    }
+    let anyMeasured = false;
+    const rows = state.checkRows.map((r) => {
+      let beza = "—";
+      let keputusan = "Menunggu ukuran";
+      let cls = "";
+      let done = "";
+      if (r.measured !== null) {
+        anyMeasured = true;
+        const diff = r.measured - r.target;
+        beza = (diff > 0 ? "+" : "") + diff.toFixed(1) + " cm";
+        if (Math.abs(diff) <= 1) {
+          keputusan = "LULUS";
+          cls = "ok";
+          done = ' class="row-done"';
+        } else {
+          keputusan = "PEMBETULAN";
+          cls = "fail";
+        }
+      }
+      return `<tr${done}><td>${r.name}</td><td>${fmt(r.target)}</td><td>${r.measured !== null ? fmt(r.measured) : "—"}</td><td>${beza}</td><td class="${cls}">${keputusan}</td><td>${r.pieceName || "—"}</td></tr>`;
+    });
+    checkTableBody.innerHTML = rows.join("");
+    saveChecksButton.disabled = !anyMeasured;
+    updateResult();
+  }
+
+  // ---- Keputusan (Seksyen 5) ----
+  function updateResult() {
+    const resultTitle = $("resultTitle");
+    const resultMessage = $("resultMessage");
+    const resultBox = document.querySelector(".result-box");
+    const measured = state.checkRows.filter((r) => r.measured !== null);
+    if (measured.length === 0) {
+      resultTitle.textContent = "Menunggu semakan pola";
+      resultMessage.textContent = "Keputusan akan dipaparkan selepas analisis.";
+      resultBox.className = "result-box";
+      return;
+    }
+    const lulus = measured.filter((r) => Math.abs(r.measured - r.target) <= 1).length;
+    if (lulus === measured.length) {
+      resultTitle.textContent = "✅ LULUS";
+      resultMessage.textContent = `Semua ${measured.length} ukuran pola menepati sasaran (toleransi ±1 cm).`;
+      resultBox.className = "result-box ok";
+    } else {
+      resultTitle.textContent = "⚠️ PERLU PEMBETULAN";
+      resultMessage.textContent = `${measured.length - lulus} daripada ${measured.length} ukuran melebihi toleransi ±1 cm. Betulkan pola dan ukur semula.`;
+      resultBox.className = "result-box fail";
+    }
+  }
+
+  // ---- Passport (Seksyen 6) ----
+  const PASSPORT_KEY = "smartpola_passport";
+
+  function loadPassport() {
+    try {
+      state.passport = JSON.parse(localStorage.getItem(PASSPORT_KEY) || "[]");
+    } catch (e) {
+      state.passport = [];
+    }
+    renderPassport();
+  }
+
+  function renderPassport() {
+    const list = $("passportList");
+    $("passportTotal").textContent = state.passport.length;
+    const lulus = state.passport.filter((r) => r.lulus).length;
+    $("passportLulus").textContent = lulus;
+    if (state.passport.length === 0) {
+      list.innerHTML = '<li>Belum ada rekod.</li>';
+      return;
+    }
+    list.innerHTML = state.passport
+      .map((r) => {
+        const d = new Date(r.time);
+        const dateStr = d.toLocaleDateString("ms-MY") + " " + d.toLocaleTimeString("ms-MY", { hour: "2-digit", minute: "2-digit" });
+        const cls = r.lulus ? "lulus" : "gagal";
+        const sym = r.lulus ? "✅" : "⚠️";
+        return `<li><span>${sym} <strong>${r.garment} — ${r.part}</strong> (${r.count} ukuran)<br><small>${dateStr}</small></span><span class="${cls}">${r.lulus ? "LULUS" : "PERLU PEMBETULAN"}</span></li>`;
+      })
+      .join("");
+  }
+
+  saveChecksButton.addEventListener("click", () => {
+    const measured = state.checkRows.filter((r) => r.measured !== null);
+    if (measured.length === 0) {
+      setStatus(statusEl, "Tiada ukuran untuk disimpan.", "warn");
+      return;
+    }
+    const lulus = measured.every((r) => Math.abs(r.measured - r.target) <= 1);
+    const garmentLabel = FORMULAS[state.garment] ? FORMULAS[state.garment].label : "Pola";
+    const partLabel = FORMULAS[state.garment] && FORMULAS[state.garment].parts[state.part] ? FORMULAS[state.garment].parts[state.part].label : "";
+    state.passport.push({
+      time: Date.now(),
+      garment: garmentLabel,
+      part: partLabel,
+      count: measured.length,
+      lulus,
+      rows: measured.map((r) => ({ name: r.name, target: r.target, measured: r.measured })),
+    });
+    try {
+      localStorage.setItem(PASSPORT_KEY, JSON.stringify(state.passport));
+    } catch (e) {
+      // abaikan
+    }
+    renderPassport();
+    setStatus(statusEl, "💾 Semakan disimpan ke Passport.", "ok");
+  });
+
+  $("clearPassportButton").addEventListener("click", () => {
+    if (!confirm("Kosongkan semua rekod Passport?")) return;
+    state.passport = [];
+    try {
+      localStorage.removeItem(PASSPORT_KEY);
+    } catch (e) {
+      // abaikan
+    }
+    renderPassport();
+  });
+
+  autoMeasureButton.addEventListener("click", autoMeasure);
+
+  // =======================================================
+  // INIT
+  // =======================================================
+  updateUnitLabels();
+  loadMeasurements();
+  loadPassport();
+  renderFormula();
+  renderCheckTable();
+});

@@ -1,784 +1,654 @@
+/* =========================================================
+   SMART-POLA — style.css
+   ========================================================= */
+:root {
+  --ink: #111827;
+  --ink-soft: #4b5563;
+  --muted: #6b7280;
+  --line: #e5e7eb;
+  --bg: #f4f5f7;
+  --card: #ffffff;
+  --primary: #2563eb;
+  --primary-dark: #1d4ed8;
+  --ok: #15803d;
+  --warn: #b45309;
+  --fail: #b91c1c;
+  --radius: 14px;
+}
+
 * {
-box-sizing: border-box;
+  box-sizing: border-box;
 }
+
 html {
--webkit-text-size-adjust: 100%;
+  -webkit-text-size-adjust: 100%;
 }
+
 body {
-margin: 0;
-font-family: Arial, sans-serif;
-background: #f4f5f7;
-color: #222;
+  margin: 0;
+  font-family: "Segoe UI", Arial, sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  line-height: 1.5;
 }
-img,
-video,
-canvas {
-max-width: 100%;
-}
-input,
-select,
-button,
-textarea {
-font-family: inherit;
-font-size: 16px;
-}
+
+/* ---------- Header ---------- */
 .header {
-background: #111827;
-color: white;
-padding: 24px;
+  background: var(--ink);
+  color: #fff;
+  padding: 20px;
+  text-align: center;
 }
+
 .header h1 {
-margin: 0;
-font-size: 30px;
+  margin: 0;
+  font-size: 24px;
+  letter-spacing: 0.5px;
 }
+
 .header p {
-margin: 6px 0 0;
-opacity: 0.8;
+  margin: 6px 0 0;
+  opacity: 0.8;
+  font-size: 14px;
 }
+
+/* ---------- Susun atur ---------- */
 .container {
-width: min(1100px, 92%);
-margin: 30px auto;
+  width: min(860px, 94%);
+  margin: 24px auto;
 }
+
 .card {
-background: white;
-padding: 24px;
-margin-bottom: 22px;
-border-radius: 14px;
-box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  background: var(--card);
+  padding: 20px;
+  margin-bottom: 18px;
+  border-radius: var(--radius);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
 }
+
 .card h2 {
-margin-top: 0;
+  margin-top: 0;
+  font-size: 19px;
 }
+
+.card h3 {
+  margin: 18px 0 8px;
+  font-size: 16px;
+}
+
 .description {
-color: #666;
+  color: var(--muted);
+  font-size: 14px;
+  margin-top: -4px;
 }
-/* =========================
-UKURAN BADAN
-========================= */
-.measurement-grid {
-display: grid;
-grid-template-columns: repeat(3, 1fr);
-gap: 18px;
-margin: 20px 0;
+
+/* ---------- Borang ---------- */
+label {
+  display: block;
+  font-weight: 600;
+  font-size: 14px;
+  margin-bottom: 4px;
 }
-.measurement label {
-display: block;
-font-weight: bold;
-margin-bottom: 8px;
+
+select,
+input[type="number"],
+input[type="text"] {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font-size: 15px;
+  font-family: inherit;
+  background: #fff;
+  color: var(--ink);
 }
-.input-unit {
-display: flex;
-align-items: center;
-gap: 8px;
+
+select:focus,
+input:focus {
+  outline: 2px solid var(--primary);
+  outline-offset: 1px;
+  border-color: var(--primary);
 }
-.input-unit input {
-width: 100%;
-padding: 12px;
-border: 1px solid #ccc;
-border-radius: 8px;
-font-size: 16px;
-}
-.input-unit span {
-font-weight: bold;
-min-width: 25px;
-}
-/* =========================
-UNIT DROPDOWN
-========================= */
+
 .unit-selection {
-margin-bottom: 18px;
+  margin-bottom: 16px;
+  max-width: 240px;
 }
-.unit-selection label {
-display: block;
-font-weight: bold;
-margin-bottom: 8px;
+
+.measurement-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
 }
-.unit-selection select {
-width: 100%;
-height: 46px;
-padding: 10px 12px;
-border: 1px solid #ccc;
-border-radius: 8px;
-font-size: 16px;
-background: white;
-color: #222;
+
+.input-unit {
+  display: flex;
+  align-items: stretch;
 }
-/* =========================
-TETAPAN POLA
-========================= */
-.pattern-selection {
-display: grid;
-grid-template-columns: 1fr 1fr;
-gap: 20px;
-margin-top: 20px;
+
+.input-unit input {
+  border-radius: 8px 0 0 8px;
+  border-right: none;
 }
-.pattern-field {
-width: 100%;
+
+.unit-label {
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  background: #f3f4f6;
+  border: 1px solid var(--line);
+  border-radius: 0 8px 8px 0;
+  font-size: 13px;
+  color: var(--ink-soft);
 }
-.pattern-field label {
-display: block;
-font-weight: bold;
-margin-bottom: 8px;
+
+/* ---------- Butang ---------- */
+button {
+  font-family: inherit;
 }
-/*
-PENTING:
-Select mesti jadi DROPDOWN biasa.
-*/
-.pattern-field select {
-display: block;
-width: 100%;
-height: 48px;
-padding: 0 42px 0 14px;
-border: 1px solid #c7c7c7;
-border-radius: 8px;
-font-family: Arial, sans-serif;
-font-size: 16px;
-background-color: white;
-color: #222;
-cursor: pointer;
-appearance: auto;
--webkit-appearance: auto;
--moz-appearance: auto;
-}
-.pattern-field select:focus {
-outline: none;
-border-color: #111827;
-}
-.pattern-field select:disabled {
-background-color: #f3f4f6;
-color: #777;
-cursor: not-allowed;
-}
-.target-info {
-margin-top: 18px;
-padding: 14px 16px;
-background: #eef2ff;
-border: 1px solid #c7d2fe;
-border-radius: 10px;
-font-size: 15px;
-}
-/* =========================
-BUTTON
-========================= */
+
 .primary-button,
 .secondary-button {
-border: none;
-padding: 12px 20px;
-border-radius: 8px;
-cursor: pointer;
-font-size: 15px;
+  border: none;
+  padding: 12px 18px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 600;
 }
+
 .primary-button {
-background: #111827;
-color: white;
+  background: var(--primary);
+  color: #fff;
+  margin-top: 14px;
 }
+
+.primary-button:hover:not(:disabled) {
+  background: var(--primary-dark);
+}
+
 .secondary-button {
-background: #e5e7eb;
-color: #111827;
+  background: #e5e7eb;
+  color: var(--ink);
 }
+
+.secondary-button:hover:not(:disabled) {
+  background: #d1d5db;
+}
+
 button:disabled {
-opacity: 0.5;
-cursor: not-allowed;
+  opacity: 0.5;
+  cursor: not-allowed;
 }
-/* =========================
-CAMERA
-========================= */
-.camera-container {
-position: relative;
-width: 100%;
-background: #111;
-border-radius: 12px;
-overflow: hidden;
-margin: 20px 0;
-}
-#camera {
-display: block;
-width: 100%;
-min-height: 400px;
-object-fit: cover;
-}
-#overlayCanvas {
-position: absolute;
-top: 0;
-left: 0;
-width: 100%;
-height: 100%;
-pointer-events: none;
-}
+
 .flip-button {
-position: absolute;
-top: 12px;
-right: 12px;
-width: 46px;
-height: 46px;
-border: none;
-border-radius: 50%;
-background: rgba(17, 24, 39, 0.65);
-color: #fff;
-font-size: 20px;
-cursor: pointer;
-z-index: 10;
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(17, 24, 39, 0.75);
+  color: #fff;
+  font-size: 20px;
+  cursor: pointer;
 }
-.flip-button:active {
-transform: scale(0.92);
-}
-.camera-controls {
-display: flex;
-flex-wrap: wrap;
-gap: 10px;
-}
-/* =========================
-PENENTUKURAN
-========================= */
-.calibration-box {
-margin-top: 20px;
-padding: 16px;
-background: #f9fafb;
-border: 1px solid #e5e7eb;
-border-radius: 10px;
-}
-.calibration-box h3 {
-margin-top: 0;
-}
-.calibration-box p {
-color: #666;
-font-size: 14px;
-}
-.calibration-row {
-display: flex;
-align-items: center;
-gap: 12px;
-margin: 12px 0;
-}
-.calibration-row label {
-font-weight: bold;
-}
-.calibration-row input {
-width: 140px;
-padding: 10px;
-border: 1px solid #ccc;
-border-radius: 8px;
-font-size: 16px;
-}
-/* =========================
-GAMBAR POLA
-========================= */
-.captured-pattern {
-margin-top: 20px;
-}
-.captured-pattern h3 {
-margin-bottom: 10px;
-}
-.captured-image-box {
-padding: 14px;
-background: #f3f4f6;
-border-radius: 10px;
-text-align: center;
-}
-.captured-image-box img {
-max-width: 100%;
-border-radius: 8px;
-cursor: crosshair;
-}
-.captured-image-wrap {
-position: relative;
-display: inline-block;
-max-width: 100%;
-}
-#measureCanvas {
-position: absolute;
-top: 0;
-left: 0;
-width: 100%;
-height: 100%;
-pointer-events: none;
-}
-.captured-image-box p {
-color: #777;
-margin: 6px 0;
-}
-/* =========================
-STATUS
-========================= */
-.status-box {
-margin-top: 18px;
-padding: 14px;
-background: #f3f4f6;
-border-radius: 8px;
-}
-.status {
-margin-top: 12px;
-font-weight: bold;
-}
-/* =========================
-ANALISIS
-========================= */
-.analysis-grid {
-display: grid;
-grid-template-columns: repeat(3, 1fr);
-gap: 15px;
-}
-.analysis-item {
-padding: 18px;
-background: #f3f4f6;
-border-radius: 10px;
-}
-.analysis-item span {
-display: block;
-color: #666;
-margin-bottom: 8px;
-}
-.analysis-item strong {
-font-size: 18px;
-}
-/* =========================
-KEPEKAAN & KEPING POLA
-========================= */
-.sensitivity-row {
-display: flex;
-align-items: center;
-gap: 12px;
-margin-top: 18px;
-}
-.sensitivity-row label {
-font-weight: bold;
-font-size: 14px;
-}
-.sensitivity-row input[type="range"] {
-flex: 1;
-max-width: 260px;
-accent-color: #111827;
-}
-.sensitivity-value {
-font-weight: bold;
-min-width: 24px;
-text-align: center;
-background: #eef2ff;
-border: 1px solid #c7d2fe;
-border-radius: 8px;
-padding: 4px 8px;
-}
-.piece-chips {
-display: flex;
-flex-wrap: wrap;
-gap: 8px;
-margin-top: 10px;
-}
-.piece-rename {
-display: flex;
-gap: 8px;
-margin-top: 8px;
-}
-.piece-rename input {
-flex: 1;
-min-width: 0;
-padding: 10px 12px;
-border: 1px solid #c7c7c7;
-border-radius: 8px;
-font-size: 16px;
-}
-/* =========================
-BUTIRAN UKURAN AUTOMATIK
-========================= */
-.auto-chips {
-display: flex;
-flex-wrap: wrap;
-gap: 8px;
-margin-top: 14px;
-}
-.chip {
-border: 1px solid #c7d2fe;
-background: #eef2ff;
-color: #111827;
-padding: 10px 14px;
-border-radius: 999px;
-cursor: pointer;
-font-size: 14px;
-}
-.chip.active {
-background: #111827;
-color: #fff;
-border-color: #111827;
-}
-.formula-box {
-margin-top: 18px;
-padding: 16px;
-background: #f9fafb;
-border: 1px solid #e5e7eb;
-border-radius: 10px;
-}
-.formula-box h3 {
-margin-top: 0;
-}
-.formula-detail {
-font-size: 15px;
-color: #333;
-}
+
 .check-actions {
-display: flex;
-flex-wrap: wrap;
-gap: 10px;
-margin-top: 18px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
 }
+
+.check-actions .primary-button {
+  margin-top: 0;
+}
+
 .check-hint {
-font-size: 13px;
-color: #777;
-margin: 10px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  background: #f9fafb;
+  border: 1px dashed var(--line);
+  border-radius: 10px;
+  padding: 10px 12px;
 }
-.check-actions a {
-color: #111827;
-font-weight: bold;
-text-decoration: none;
-padding: 12px 20px;
-background: #e5e7eb;
-border-radius: 8px;
-font-size: 15px;
-display: inline-block;
+
+/* ---------- Status ---------- */
+.status {
+  margin: 10px 0 0;
+  font-size: 14px;
+  font-weight: 600;
+  min-height: 1em;
+  color: var(--ink-soft);
 }
-/* =========================
-JADUAL SEMAKAN
-========================= */
+
+.status.ok {
+  color: var(--ok);
+}
+
+.status.warn {
+  color: var(--warn);
+}
+
+.status.fail {
+  color: var(--fail);
+}
+
+/* ---------- Seksyen 2: Pilihan pola ---------- */
+.pattern-selection {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+  margin-bottom: 6px;
+}
+
+.formula-box {
+  margin-top: 14px;
+  background: #f9fafb;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+
+.formula-box h3 {
+  margin: 0 0 8px;
+}
+
+.formula-detail {
+  font-size: 14px;
+  color: var(--ink-soft);
+}
+
+.formula-detail ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.formula-detail li {
+  margin-bottom: 4px;
+}
+
+.formula-detail code {
+  background: #e5e7eb;
+  border-radius: 5px;
+  padding: 1px 6px;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+/* ---------- Kamera ---------- */
+.camera-container {
+  position: relative;
+  background: #0b0f19;
+  border-radius: 12px;
+  overflow: hidden;
+  min-height: 240px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#camera {
+  width: 100%;
+  max-height: 60vh;
+  display: block;
+}
+
+#overlayCanvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.camera-controls {
+  margin-top: 10px;
+}
+
+.camera-controls .primary-button {
+  margin-top: 0;
+}
+
+.captured-pattern {
+  margin-top: 16px;
+}
+
+.captured-image-box {
+  background: #f9fafb;
+  border: 1px dashed var(--line);
+  border-radius: 10px;
+  padding: 10px;
+  text-align: center;
+  color: var(--muted);
+}
+
+.captured-image-wrap {
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
+}
+
+.captured-image-wrap img,
+.captured-image-wrap canvas {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+}
+
+.captured-image-wrap canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none; /* klik sentiasa sampai ke gambar di bawah */
+}
+
+#capturedImage {
+  cursor: crosshair;
+}
+
+.status-box {
+  margin-top: 16px;
+  font-size: 14px;
+}
+
+.status-box .status {
+  display: inline;
+  margin: 0;
+}
+
+/* ---------- Analisis ---------- */
+.analysis-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.analysis-item {
+  background: #f9fafb;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 13px;
+}
+
+.analysis-item span {
+  display: block;
+  color: var(--muted);
+}
+
+.analysis-item strong {
+  font-size: 15px;
+}
+
+.sensitivity-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 14px;
+  font-size: 14px;
+}
+
+.sensitivity-row label {
+  margin: 0;
+  white-space: nowrap;
+}
+
+.sensitivity-row input[type="range"] {
+  flex: 1;
+  padding: 0;
+}
+
+.sensitivity-value {
+  min-width: 26px;
+  text-align: center;
+  font-weight: 700;
+  background: #f3f4f6;
+  border-radius: 8px;
+  padding: 2px 6px;
+}
+
+.piece-chips,
+.auto-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.chip {
+  border: 1px solid var(--line);
+  background: #fff;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.chip.active,
+.chip:hover {
+  background: #eff6ff;
+  border-color: var(--primary);
+}
+
+.piece-rename {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+/* ---------- Jadual semakan ---------- */
 .table-wrap {
-overflow-x: auto;
--webkit-overflow-scrolling: touch;
-margin-top: 20px;
+  overflow-x: auto;
+  margin-top: 14px;
 }
+
 .check-table {
-width: 100%;
-border-collapse: collapse;
-font-size: 15px;
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
 }
+
 .check-table th,
 .check-table td {
-border: 1px solid #e5e7eb;
-padding: 10px 12px;
-text-align: left;
+  border: 1px solid var(--line);
+  padding: 8px 10px;
+  text-align: left;
 }
+
 .check-table th {
-background: #f3f4f6;
+  background: #f3f4f6;
 }
+
 .check-table .empty-row td {
-text-align: center;
-color: #777;
+  text-align: center;
+  color: var(--muted);
 }
-.result-pass {
-color: #15803d;
-font-weight: bold;
+
+.check-table td.ok {
+  color: var(--ok);
+  font-weight: 700;
 }
-.result-fail {
-color: #b91c1c;
-font-weight: bold;
+
+.check-table td.fail {
+  color: var(--fail);
+  font-weight: 700;
 }
-/* =========================
-KEPUTUSAN
-========================= */
+
+.check-table .row-done {
+  background: #f0fdf4;
+}
+
+/* ---------- Keputusan ---------- */
 .result-box {
-padding: 25px;
-text-align: center;
-background: #f3f4f6;
-border-radius: 10px;
+  background: #f9fafb;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px;
 }
+
+.result-box.ok {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+}
+
+.result-box.fail {
+  background: #fef2f2;
+  border-color: #fecaca;
+}
+
 .result-box h3 {
-margin: 0 0 10px;
-font-size: 22px;
+  margin: 0 0 6px;
 }
-.result-box h3.result-pass {
-color: #15803d;
+
+.result-box p {
+  margin: 0;
+  color: var(--ink-soft);
 }
-.result-box h3.result-fail {
-color: #b91c1c;
-}
-/* =========================
-PASSPORT
-========================= */
+
+/* ---------- Passport ---------- */
 .passport-header {
-display: flex;
-justify-content: space-between;
-align-items: flex-start;
-gap: 16px;
-flex-wrap: wrap;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  flex-wrap: wrap;
 }
+
+.passport-header h3,
 .passport-header p {
-color: #666;
-margin: 4px 0 0;
+  margin: 0;
 }
+
+.passport-header p {
+  color: var(--muted);
+  font-size: 14px;
+}
+
 .passport-stats {
-display: flex;
-gap: 12px;
+  display: flex;
+  gap: 10px;
 }
+
 .passport-stat {
-padding: 12px 18px;
-background: #f3f4f6;
-border-radius: 10px;
-text-align: center;
+  background: #f9fafb;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 8px 14px;
+  text-align: center;
 }
+
 .passport-stat strong {
-display: block;
-font-size: 24px;
+  display: block;
+  font-size: 20px;
 }
+
 .passport-stat span {
-font-size: 13px;
-color: #666;
+  font-size: 12px;
+  color: var(--muted);
 }
+
 .passport-list {
-list-style: none;
-margin: 18px 0;
-padding: 0;
+  list-style: none;
+  padding: 0;
+  margin: 14px 0 0;
 }
+
 .passport-list li {
-padding: 12px 16px;
-background: #f9fafb;
-border: 1px solid #e5e7eb;
-border-radius: 10px;
-margin-bottom: 10px;
+  background: #f9fafb;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin-bottom: 8px;
+  font-size: 14px;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
 }
-.passport-list .passport-empty {
-text-align: center;
-color: #777;
+
+.passport-list .lulus {
+  color: var(--ok);
+  font-weight: 700;
 }
-.passport-date {
-font-size: 13px;
-color: #666;
-margin-bottom: 6px;
+
+.passport-list .gagal {
+  color: var(--fail);
+  font-weight: 700;
 }
-.passport-line {
-font-size: 14px;
-margin-top: 4px;
-}
-/* =========================
-PASSPORT / LEGACY PLACEHOLDER
-========================= */
-.passport-placeholder {
-padding: 20px;
-border: 2px dashed #ccc;
-border-radius: 10px;
-text-align: center;
-color: #777;
-}
-/* =========================
-FOOTER
-========================= */
+
+/* ---------- Footer & banner PWA ---------- */
 footer {
-text-align: center;
-padding: 30px;
-color: #777;
+  text-align: center;
+  padding: 20px;
+  color: var(--muted);
+  font-size: 13px;
 }
+
 footer a {
-color: #111827;
-font-weight: bold;
+  color: var(--ink);
+  font-weight: 600;
 }
-/* =========================
-PWA INSTALL BANNER
-========================= */
+
 .install-banner {
-display: flex;
-align-items: center;
-justify-content: space-between;
-gap: 14px;
-position: fixed;
-left: 16px;
-right: 16px;
-bottom: 16px;
-max-width: 560px;
-margin: 0 auto;
-padding: 14px 16px;
-background: #111827;
-color: #fff;
-border-radius: 12px;
-box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
-z-index: 100;
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  z-index: 50;
+  background: var(--ink);
+  color: #fff;
+  border-radius: 12px;
+  padding: 14px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
 }
+
 .install-banner p {
-margin: 4px 0 0;
-font-size: 13px;
-opacity: 0.8;
+  margin: 2px 0 0;
+  font-size: 13px;
+  opacity: 0.8;
 }
+
 .install-actions {
-display: flex;
-gap: 8px;
-flex-shrink: 0;
-}
-.install-banner .primary-button {
-background: #22d3ee;
-color: #111827;
-}
-.install-banner .secondary-button {
-background: rgba(255, 255, 255, 0.12);
-color: #fff;
-}
-/* =========================
-TABLET (≤ 1024px)
-========================= */
-@media (max-width: 1024px) {
-.container {
-width: min(760px, 94%);
-margin: 22px auto;
-}
-.measurement-grid {
-grid-template-columns: repeat(2, 1fr);
-}
+  display: flex;
+  gap: 8px;
 }
 
-/* =========================
-MOBILE BESAR (≤ 750px)
-========================= */
-@media (max-width: 750px) {
-.header {
-padding: 18px 16px;
-}
-.header h1 {
-font-size: 24px;
-}
-.header p {
-font-size: 14px;
-}
-.container {
-width: 100%;
-margin: 0;
-}
-.card {
-padding: 16px;
-margin-bottom: 14px;
-border-radius: 0;
-}
-.card h2 {
-font-size: 19px;
-}
-.measurement-grid,
-.analysis-grid,
-.pattern-selection {
-grid-template-columns: 1fr;
-gap: 12px;
-}
-.measurement-grid {
-margin: 14px 0;
-}
-#camera {
-min-height: 240px;
-height: 56vw;
-max-height: 420px;
-}
-.primary-button,
-.secondary-button {
-width: 100%;
-padding: 14px 18px;
-font-size: 16px;
-}
-.camera-controls,
-.check-actions {
-flex-direction: column;
-}
-.calibration-row {
-flex-direction: column;
-align-items: stretch;
-gap: 8px;
-}
-.calibration-row input {
-width: 100%;
-}
-.check-actions {
-margin-top: 14px;
-}
-.passport-header {
-flex-direction: column;
-}
-.install-banner {
-left: 12px;
-right: 12px;
-bottom: 12px;
-flex-direction: column;
-align-items: stretch;
-}
-.result-box {
-padding: 18px;
-}
-.result-box h3 {
-font-size: 19px;
-}
-footer {
-padding: 20px 16px;
-}
+.install-actions .primary-button {
+  margin-top: 0;
+  background: #fff;
+  color: var(--ink);
 }
 
-/* =========================
-JADUAL → KAD (≤ 620px)
-========================= */
-@media (max-width: 620px) {
-.check-table thead {
-display: none;
-}
-.check-table,
-.check-table tbody,
-.check-table tr,
-.check-table td {
-display: block;
-width: 100%;
-}
-.check-table tr {
-background: #f9fafb;
-border: 1px solid #e5e7eb;
-border-radius: 10px;
-margin-bottom: 10px;
-padding: 6px 10px;
-}
-.check-table .empty-row {
-background: transparent;
-border: none;
-padding: 0;
-}
-.check-table td {
-border: none;
-padding: 7px 4px;
-display: flex;
-justify-content: space-between;
-align-items: center;
-gap: 12px;
-text-align: right;
-}
-.check-table td::before {
-content: attr(data-label);
-font-weight: bold;
-color: #666;
-text-align: left;
-}
-.check-table .empty-row td {
-display: block;
-text-align: center;
-}
-.check-table .empty-row td::before {
-content: none;
-}
+.install-actions .secondary-button {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
 }
 
-/* =========================
-TELEFON KECIL (≤ 380px)
-========================= */
-@media (max-width: 380px) {
-.header h1 {
-font-size: 21px;
-}
-.card {
-padding: 13px;
-}
-.card h2 {
-font-size: 17px;
-}
-.input-unit input,
-.unit-selection select,
-.pattern-field select,
-.calibration-row input {
-font-size: 16px; /* kekal 16px: iOS zoom jika < 16px */
-}
-.analysis-item strong {
-font-size: 16px;
-}
-#camera {
-min-height: 200px;
-height: 62vw;
-}
-.flip-button {
-width: 52px;
-height: 52px;
-font-size: 22px;
-}
+/* ---------- Responsif ---------- */
+@media (max-width: 600px) {
+  .container {
+    width: 100%;
+    margin: 0;
+  }
+
+  .card {
+    border-radius: 0;
+    padding: 15px;
+  }
+
+  .install-banner {
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border-radius: 0;
+  }
 }

@@ -1,28 +1,24 @@
 // =========================================================
-// SMART-POLA Service Worker (V4.0.7)
-// Strategi:
-//   - Halaman, JS & CSS: network-first, fallback cache
-//     (kod sentiasa versi terkini - elak ralat versi bercampur)
-//   - Ikon/manifest: stale-while-revalidate
-//   - Lain-lain (kad penentukuran): cache-first
-// Naikkan CACHE_NAME + versi ?v= dalam index.html setiap kemas kini.
+// SMART-POLA — sw.js (Service Worker PWA)
+// Cache-first untuk mod offline.
+// Naikkan CACHE_NAME setiap kali fail aplikasi berubah.
 // =========================================================
-const CACHE_NAME = "smartpola-v4.2.0";
-const APP_VERSION = "4.2.0";
-const PRECACHE = [
+const CACHE_NAME = "smartpola-v5.1.0";
+const ASSETS = [
   "./",
   "./index.html",
+  "./style.css",
+  "./app.js",
   "./checklist.html",
-  "./app.js?v=" + APP_VERSION,
-  "./style.css?v=" + APP_VERSION,
   "./manifest.json",
   "./icon.svg",
-  "./icon-maskable.svg"
+  "./icon-maskable.svg",
+  "./Calibration card.png",
 ];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(PRECACHE))
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
   );
   self.skipWaiting();
 });
@@ -31,73 +27,32 @@ self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
       Promise.all(
-        keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))
+        keys
+          .filter((key) => key !== CACHE_NAME)
+          .map((key) => caches.delete(key))
       )
-    ).then(() => self.clients.claim())
+    )
   );
+  self.clients.claim();
 });
 
 self.addEventListener("fetch", (event) => {
-  const request = event.request;
-  if (request.method !== "GET") return;
-
-  const url = new URL(request.url);
-  const isPage = request.mode === "navigate";
-  const isCode = url.origin === location.origin &&
-    (url.pathname.endsWith(".js") || url.pathname.endsWith(".css"));
-
-  // Halaman, JS & CSS: cuba rangkaian dahulu, fallback cache (offline)
-  if (isPage || isCode) {
-    event.respondWith(
-      fetch(request)
-        .then((response) => {
-          const copy = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
-          return response;
-        })
-        .catch(() =>
-          caches.match(request).then(
-            (cached) => cached || (isPage ? caches.match("./index.html") : undefined)
-          )
-        )
-    );
-    return;
-  }
-
-  // Ikon & manifest: stale-while-revalidate
-  if (
-    url.origin === location.origin &&
-    (url.pathname.endsWith(".svg") || url.pathname.endsWith(".json"))
-  ) {
-    event.respondWith(
-      caches.match(request).then((cached) => {
-        const network = fetch(request)
+  if (event.request.method !== "GET") return;
+  event.respondWith(
+    caches.match(event.request).then((cached) => {
+      return (
+        cached ||
+        fetch(event.request)
           .then((response) => {
-            if (response.ok) {
+            // Simpan salinan aset asal sahaja.
+            if (response.ok && new URL(event.request.url).origin === location.origin) {
               const copy = response.clone();
-              caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
+              caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
             }
             return response;
           })
-          .catch(() => cached);
-        return cached || network;
-      })
-    );
-    return;
-  }
-
-  // Lain-lain (imej kad penentukuran dll.): cache-first
-  event.respondWith(
-    caches.match(request).then(
-      (cached) =>
-        cached ||
-        fetch(request).then((response) => {
-          if (response.ok && url.origin === location.origin) {
-            const copy = response.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
-          }
-          return response;
-        })
-    )
+          .catch(() => caches.match("./index.html"))
+      );
+    })
   );
 });
